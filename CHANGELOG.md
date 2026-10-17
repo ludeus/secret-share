@@ -4,7 +4,7 @@ Toutes les évolutions notables sont consignées ici.
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le projet
 respecte le [versionnage sémantique](https://semver.org/lang/fr/).
 
-## [Non publié]
+## [1.2.3] - 2026-10-17
 
 ### Ajouts
 
@@ -20,6 +20,10 @@ respecte le [versionnage sémantique](https://semver.org/lang/fr/).
 - L'image applique les correctifs de sécurité Debian publiés depuis l'image de base
   (curl : CVE-2026-8286, CVE-2026-8927, CVE-2026-92392).
 - `puppeteer-core` 25 pour les tests e2e : retire `basic-ftp` vulnérable (CVE-2026-102990).
+
+### Maintenance
+
+- paquets système mis à jour : apache2 apache2-bin apache2-data apache2-utils curl libcurl4t64 libexpat1 liblzma5 linux-libc-dev xz-utils
 
 ## [1.2.2] - 2026-10-17
 

@@ -152,11 +152,14 @@ def upgrade_php():
 # ---------------------------------------------------------------------------
 def upgrade_composer_packages():
     global minor_release
-    result = composer('outdated', '--direct', '--major-only', '--format=json')
+    # --locked : d'après composer.lock, pas d'après le contenu de vendor/
+    result = composer('outdated', '--locked', '--direct', '--major-only', '--format=json')
     if result.returncode != 0:
         report('WARNING', 'composer outdated a échoué : ' + result.stderr.strip()[-300:])
         return
-    outdated = json.loads(result.stdout or '{}').get('installed', [])
+    # clé « locked » avec --locked, « installed » sinon
+    data = json.loads(result.stdout or '{}')
+    outdated = data.get('locked', data.get('installed', []))
     manifest = json.loads((ROOT / 'composer.json').read_text(encoding='utf-8'))
     for package in outdated:
         name, latest = package['name'], package['latest']

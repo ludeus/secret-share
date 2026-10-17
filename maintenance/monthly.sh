@@ -368,10 +368,10 @@ PY
     step "Attente de la CI du tag v${version}"
     conclusion=""
     for _ in $(seq 1 90); do
-        run="$(github_api "actions/runs?per_page=10" | python3 -c "
-    import json, sys
-    runs = [r for r in json.load(sys.stdin)['workflow_runs'] if r['head_branch'] == 'v${version}']
-    print(f\"{runs[0]['status']} {runs[0]['conclusion']}\" if runs else 'absent')")"
+        # code Python sur une ligne : il ne doit pas hériter de l'indentation du script
+        run="$(github_api "actions/runs?per_page=10" | python3 -c "import json, sys; \
+runs = [r for r in json.load(sys.stdin)['workflow_runs'] if r['head_branch'] == 'v${version}']; \
+print(f\"{runs[0]['status']} {runs[0]['conclusion']}\" if runs else 'absent')")"
         case "$run" in
             "completed success") conclusion=success; break ;;
             completed*) conclusion="${run#completed }"; break ;;

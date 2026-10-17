@@ -18,6 +18,8 @@ Partagez un mot de passe, une clé d'API ou toute information sensible au moyen 
 
 ![Formulaire de création](docs/screenshot.png)
 
+![Lien créé avec URL courte : lien à copier et QR code](docs/screenshot-created.png)
+
 ## Démarrage rapide
 
 Prérequis : Docker avec le plugin Compose.

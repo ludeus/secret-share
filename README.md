@@ -302,7 +302,7 @@ Pour signaler une vulnérabilité, voir [SECURITY.md](SECURITY.md).
 
 ## Développement
 
-Prérequis : PHP 8.3+ avec les extensions `sodium` et `pdo_sqlite`, Composer.
+Prérequis : PHP 8.5+ avec les extensions `sodium` et `pdo_sqlite`, Composer.
 
 ```bash
 composer install
@@ -432,7 +432,7 @@ La CI applique aussi Trivy à chaque push : une vulnérabilité corrigeable non 
 
 ### Publication
 
-La CI GitHub Actions (`.github/workflows/ci.yml`) lance les vérifications sur PHP 8.3 et 8.4,
+La CI GitHub Actions (`.github/workflows/ci.yml`) lance les vérifications sur PHP 8.5,
 teste l'image, puis la publie sur Docker Hub (`linux/amd64` et `linux/arm64`) à chaque push
 sur `main` (étiquette `edge`) et à chaque tag `vX.Y.Z`. Secrets à définir dans le dépôt :
 `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN` ; variable optionnelle `DOCKERHUB_IMAGE`.

@@ -44,7 +44,7 @@ final class LanguageCatalogTest extends TestCase
 
     protected function tearDown(): void
     {
-        array_map('unlink', glob($this->directory . '/*') ?: []);
+        array_map(unlink(...), glob($this->directory . '/*') ?: []);
         rmdir($this->directory);
     }
 
@@ -69,7 +69,7 @@ final class LanguageCatalogTest extends TestCase
 
     public function testMissingTextsFallBackToReference(): void
     {
-        $translator = (new LanguageCatalog($this->directory))->translator('xx');
+        $translator = new LanguageCatalog($this->directory)->translator('xx');
 
         $this->assertSame('Xello Ada', $translator->t('hello', ['name' => 'Ada']));
         $this->assertSame('Bye', $translator->t('bye'));
@@ -79,7 +79,7 @@ final class LanguageCatalogTest extends TestCase
     public function testCheckerReportsProblems(): void
     {
         $this->write('xx', ['lang.name' => 'Xish', 'lang.dir' => 'up', 'hello' => 'Xello', 'extra' => 'x']);
-        $problems = (new TranslationChecker(new LanguageCatalog($this->directory)))->check('xx');
+        $problems = new TranslationChecker(new LanguageCatalog($this->directory))->check('xx');
 
         $this->assertSame(
             [
@@ -98,7 +98,7 @@ final class LanguageCatalogTest extends TestCase
      */
     public static function projectLanguages(): iterable
     {
-        foreach (array_keys((new LanguageCatalog(dirname(__DIR__, 3) . '/lang'))->languages()) as $code) {
+        foreach (array_keys(new LanguageCatalog(dirname(__DIR__, 3) . '/lang')->languages()) as $code) {
             yield $code => [$code];
         }
     }
@@ -108,12 +108,12 @@ final class LanguageCatalogTest extends TestCase
     {
         $catalog = new LanguageCatalog(dirname(__DIR__, 3) . '/lang');
 
-        $this->assertSame([], (new TranslationChecker($catalog))->check($code));
+        $this->assertSame([], new TranslationChecker($catalog)->check($code));
     }
 
     public function testProjectProvidesTheMostSpokenLanguages(): void
     {
-        $languages = (new LanguageCatalog(dirname(__DIR__, 3) . '/lang'))->languages();
+        $languages = new LanguageCatalog(dirname(__DIR__, 3) . '/lang')->languages();
 
         foreach (['en', 'zh', 'hi', 'es', 'fr', 'ar'] as $code) {
             $this->assertArrayHasKey($code, $languages);

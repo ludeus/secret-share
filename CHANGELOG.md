@@ -4,7 +4,7 @@ Toutes les évolutions notables sont consignées ici.
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le projet
 respecte le [versionnage sémantique](https://semver.org/lang/fr/).
 
-## [Non publié]
+## [1.3.0] - 2026-10-17
 
 ### Maintenance automatisée
 
@@ -15,6 +15,23 @@ respecte le [versionnage sémantique](https://semver.org/lang/fr/).
   abandon des montées de version à défaut.
 - Mise à jour du serveur aussi lorsqu'il n'est pas sur la dernière version publiée, second
   essai des tests en production avant tout retour en arrière.
+
+### Maintenance
+
+- PHP 8.3 => 8.5
+- Node.js de la CI : 22 => 24
+- action GitHub actions/checkout : v4 => v7
+- action GitHub actions/setup-node : v4 => v7
+- action GitHub docker/build-push-action : v6 => v7
+- action GitHub docker/login-action : v3 => v4
+- action GitHub docker/metadata-action : v5 => v6
+- action GitHub docker/setup-buildx-action : v3 => v4
+- image ShellCheck : v0.10.0 => v0.11.0
+- images de base figées sur leur dernière version : php:8.5-apache@sha256:974e3a920309…
+- code modernisé par Rector pour la nouvelle version de PHP
+- composer : Removing sebastian/git-state (1.0.0)
+- composer : Removing sebastian/file-filter (1.0.0)
+- code adapté aux montées de version par Claude Code (voir le journal)
 
 ## [1.2.3] - 2026-10-17
 

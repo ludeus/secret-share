@@ -146,7 +146,7 @@ final readonly class Config
      */
     private static function list(array $env, string $name): array
     {
-        return array_values(array_filter(array_map('trim', explode(',', self::string($env, $name, '')))));
+        return array_values(array_filter(array_map(trim(...), explode(',', self::string($env, $name, '')))));
     }
 
     /**

@@ -167,6 +167,6 @@ final readonly class Envelope
             $this->pwhashMemLimit,
             SODIUM_CRYPTO_PWHASH_ALG_ARGON2ID13
         );
-        return $this->pwhashSemaphore === null ? $derive() : $this->pwhashSemaphore->run($derive);
+        return $this->pwhashSemaphore?->run($derive) ?? $derive();
     }
 }

@@ -64,7 +64,7 @@ final class CsrfTest extends TestCase
 
     public function testInsecureCookieWithoutHttps(): void
     {
-        $response = (new Csrf(false))->attach(new Request('GET', '/'), new Response(), self::TOKEN);
+        $response = new Csrf(false)->attach(new Request('GET', '/'), new Response(), self::TOKEN);
 
         $this->assertStringStartsWith('csrf=', $response->cookies[0]);
         $this->assertStringNotContainsString('Secure', $response->cookies[0]);

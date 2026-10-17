@@ -17,7 +17,7 @@ final class QrCodeRendererTest extends TestCase
 {
     public function testRendersSvgDataUri(): void
     {
-        $uri = (new QrCodeRenderer())->dataUri('https://secret.example.org/s#abcdef');
+        $uri = new QrCodeRenderer()->dataUri('https://secret.example.org/s#abcdef');
 
         $this->assertIsString($uri);
         $this->assertStringStartsWith('data:image/svg+xml;base64,', $uri);
@@ -29,6 +29,6 @@ final class QrCodeRendererTest extends TestCase
 
     public function testTooLongContentReturnsNull(): void
     {
-        $this->assertNull((new QrCodeRenderer())->dataUri(str_repeat('a', 5000)));
+        $this->assertNull(new QrCodeRenderer()->dataUri(str_repeat('a', 5000)));
     }
 }

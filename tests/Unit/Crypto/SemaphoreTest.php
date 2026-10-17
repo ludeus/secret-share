@@ -30,13 +30,13 @@ final class SemaphoreTest extends TestCase
 
     protected function tearDown(): void
     {
-        array_map('unlink', glob($this->directory . '/*') ?: []);
+        array_map(unlink(...), glob($this->directory . '/*') ?: []);
         rmdir($this->directory);
     }
 
     public function testRunReturnsOperationResult(): void
     {
-        $this->assertSame(42, (new Semaphore($this->directory, 1))->run(fn (): int => 42));
+        $this->assertSame(42, new Semaphore($this->directory, 1)->run(fn (): int => 42));
     }
 
     public function testTimesOutWhenAllSlotsAreTaken(): void
@@ -48,7 +48,7 @@ final class SemaphoreTest extends TestCase
 
         try {
             $this->expectException(RuntimeException::class);
-            (new Semaphore($this->directory, 1, 50))->run(fn (): int => 42);
+            new Semaphore($this->directory, 1, 50)->run(fn (): int => 42);
         } finally {
             flock($handle, LOCK_UN);
             fclose($handle);
@@ -61,7 +61,7 @@ final class SemaphoreTest extends TestCase
         $this->assertNotFalse($handle);
         flock($handle, LOCK_EX);
 
-        $this->assertSame('ok', (new Semaphore($this->directory, 2, 50))->run(fn (): string => 'ok'));
+        $this->assertSame('ok', new Semaphore($this->directory, 2, 50)->run(fn (): string => 'ok'));
 
         flock($handle, LOCK_UN);
         fclose($handle);

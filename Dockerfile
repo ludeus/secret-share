@@ -5,9 +5,9 @@
 #   docker build -t secret-share .                 # image de production
 #   docker build --target test -t secret-share:test .  # image avec outils de test
 
-ARG PHP_VERSION=8.3
+ARG PHP_VERSION=8.5
 # empreinte de php:${PHP_VERSION}-apache, mise à jour par maintenance/upgrade.py
-ARG PHP_IMAGE_DIGEST=sha256:f8506a19d79cad7fcf0c8049f1ed2208824961018fdc10bd80f324094dcd36bd
+ARG PHP_IMAGE_DIGEST=sha256:974e3a920309308e1690ed607e6cc3061d6906f90cc8d30fe519daa48bccf101
 
 # ---------------------------------------------------------------------------
 # Dépendances Composer (sans les outils de développement)

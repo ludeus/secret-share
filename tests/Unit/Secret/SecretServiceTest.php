@@ -50,7 +50,7 @@ final class SecretServiceTest extends TestCase
 
     private function storedSecrets(): int
     {
-        return (new SecretRepository($this->pdo))->count();
+        return new SecretRepository($this->pdo)->count();
     }
 
     /**

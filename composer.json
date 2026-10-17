@@ -12,7 +12,7 @@
         "qrcode"
     ],
     "require": {
-        "php": ">=8.3",
+        "php": ">=8.5",
         "ext-pdo": "*",
         "ext-pdo_sqlite": "*",
         "ext-sodium": "*",
@@ -31,7 +31,7 @@
     },
     "config": {
         "platform": {
-            "php": "8.3.0"
+            "php": "8.5.0"
         },
         "sort-packages": true,
         "optimize-autoloader": true

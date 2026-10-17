@@ -46,7 +46,7 @@ final class JwtCodecTest extends TestCase
 
     public function testTokenSignedWithAnotherKeyIsRejected(): void
     {
-        $jwt = (new JwtCodec(new KeyRing(str_repeat('x', 32)), $this->clock))->encode(['jti' => 'abc']);
+        $jwt = new JwtCodec(new KeyRing(str_repeat('x', 32)), $this->clock)->encode(['jti' => 'abc']);
 
         $this->expectException(DecryptionException::class);
         $this->codec->decode($jwt);

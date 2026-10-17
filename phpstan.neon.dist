@@ -10,3 +10,12 @@ parameters:
         - lang
         - templates
     tmpDir: .phpstan.cache
+    ignoreErrors:
+        # depuis PHP 8.5, ini_get('register_argc_argv') vaut « 0 » en CLI alors que $argv y est
+        # toujours défini : PHPStan, qui se fie à cette directive, le croit à tort indéfini
+        -
+            message: '#^Variable \$argv might not be defined\.$#'
+            identifier: variable.undefined
+            paths:
+                - bin/check-translations
+                - bin/unblock

@@ -21,7 +21,7 @@ try {
 } catch (Throwable $e) {
     // seul le type et le message sont journalisés : jamais les données de la requête
     error_log(sprintf('[secret-share] %s: %s', $e::class, $e->getMessage()));
-    (new Response(
+    new Response(
         'Service temporarily unavailable.',
         503,
         [
@@ -30,5 +30,5 @@ try {
             'X-Content-Type-Options' => 'nosniff',
             'Content-Security-Policy' => "default-src 'none'; frame-ancestors 'none'",
         ]
-    ))->send();
+    )->send();
 }

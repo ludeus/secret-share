@@ -46,8 +46,8 @@ final class TranslatorTest extends TestCase
 
     public function testDirection(): void
     {
-        $this->assertSame('ltr', (new Translator('fr', []))->direction());
-        $this->assertSame('rtl', (new Translator('ar', ['lang.dir' => 'rtl']))->direction());
-        $this->assertSame('ltr', (new Translator('xx', ['lang.dir' => 'n\'importe quoi']))->direction());
+        $this->assertSame('ltr', new Translator('fr', [])->direction());
+        $this->assertSame('rtl', new Translator('ar', ['lang.dir' => 'rtl'])->direction());
+        $this->assertSame('ltr', new Translator('xx', ['lang.dir' => 'n\'importe quoi'])->direction());
     }
 }

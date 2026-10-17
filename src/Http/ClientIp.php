@@ -128,11 +128,6 @@ final readonly class ClientIp
 
     private function isTrusted(string $ip): bool
     {
-        foreach ($this->trustedProxies as $range) {
-            if (self::inRange($ip, $range)) {
-                return true;
-            }
-        }
-        return false;
+        return array_any($this->trustedProxies, fn (string $range): bool => self::inRange($ip, $range));
     }
 }

@@ -39,7 +39,7 @@ final class QrCodeRenderer
             ]
         );
         try {
-            $matrix = (new QRCode($options))->addByteSegment($content)->getQRMatrix();
+            $matrix = new QRCode($options)->addByteSegment($content)->getQRMatrix();
         } catch (QRCodeException) {
             return null;
         }

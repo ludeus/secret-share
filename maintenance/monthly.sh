@@ -187,7 +187,7 @@ build_and_test() {
 
     step "Tests : standard, traductions, analyse statique, PHPUnit"
     docker run --rm "$TEST_IMAGE" || return 1
-    docker run --rm -v "$ROOT:/mnt" -w /mnt koalaman/shellcheck:v0.10.0 \
+    docker run --rm -v "$ROOT:/mnt" -w /mnt koalaman/shellcheck:v0.11.0 \
         install.sh unblock.sh check-token.sh docker/entrypoint.sh \
         maintenance/monthly.sh maintenance/systemd/install.sh || return 1
 

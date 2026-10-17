@@ -52,6 +52,6 @@ final class KeyRingTest extends TestCase
         $this->assertSame($reference, $keyRing->dataKey($serverKey, 'id'));
         $this->assertNotSame($reference, $keyRing->dataKey(random_bytes(32), 'id'));
         $this->assertNotSame($reference, $keyRing->dataKey($serverKey, 'id2'));
-        $this->assertNotSame($reference, (new KeyRing(str_repeat('b', 32)))->dataKey($serverKey, 'id'));
+        $this->assertNotSame($reference, new KeyRing(str_repeat('b', 32))->dataKey($serverKey, 'id'));
     }
 }

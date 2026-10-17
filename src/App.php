@@ -16,7 +16,9 @@ use SecretShare\Crypto\JwtCodec;
 use SecretShare\Crypto\KeyRing;
 use SecretShare\Crypto\PasswordRequiredException;
 use SecretShare\Crypto\Semaphore;
+use SecretShare\Http\ClientIp;
 use SecretShare\Http\Csrf;
+use SecretShare\Http\RateLimiter;
 use SecretShare\Http\Request;
 use SecretShare\Http\Response;
 use SecretShare\Http\SecurityHeaders;
@@ -25,9 +27,11 @@ use SecretShare\Secret\InvalidPasswordException;
 use SecretShare\Secret\SecretNotFoundException;
 use SecretShare\Secret\SecretService;
 use SecretShare\Secret\ShareRequest;
-use SecretShare\Secret\StorageFullException;
+use SecretShare\Secret\QuotaExceededException;
 use SecretShare\Secret\ValidationException;
 use SecretShare\Storage\Database;
+use SecretShare\Storage\Maintenance;
+use SecretShare\Storage\RateLimitRepository;
 use SecretShare\Storage\SecretRepository;
 use SecretShare\View\QrCodeRenderer;
 use SecretShare\View\Translator;
@@ -53,7 +57,7 @@ use SecretShare\View\View;
  */
 final readonly class App
 {
-    public const string VERSION = '1.0.0';
+    public const string VERSION = '1.0.1';
     public const string SHARE_PATH = '/s';
     public const string REVOKE_PATH = '/r';
     private const string ROOT_DIR = __DIR__ . '/..';
@@ -62,6 +66,10 @@ final readonly class App
         private Config $config,
         private SecretService $secrets,
         private QrCodeRenderer $qrCode,
+        private Maintenance $maintenance,
+        private RateLimiter $rateLimiter,
+        private ClientIp $clientIp,
+        private Clock $clock,
         private string $templatesDir = self::ROOT_DIR . '/templates',
         private string $langDir = self::ROOT_DIR . '/lang',
     ) {
@@ -77,10 +85,13 @@ final readonly class App
         ?Envelope $envelope = null
     ): self {
         $clock ??= new SystemClock();
+        $pdo ??= Database::connect($config->databasePath);
         $keyRing = new KeyRing($config->appSecret);
+        $secrets = new SecretRepository($pdo);
+        $rateLimits = new RateLimitRepository($pdo);
         $service = new SecretService(
             $config,
-            new SecretRepository($pdo ?? Database::connect($config->databasePath)),
+            $secrets,
             $keyRing,
             $envelope ?? new Envelope(
                 pwhashSemaphore: new Semaphore(sys_get_temp_dir(), max(1, $config->argon2Concurrency))
@@ -88,7 +99,15 @@ final readonly class App
             new JwtCodec($keyRing, $clock),
             $clock,
         );
-        return new self($config, $service, new QrCodeRenderer());
+        return new self(
+            $config,
+            $service,
+            new QrCodeRenderer(),
+            new Maintenance($pdo, $secrets, $rateLimits),
+            new RateLimiter($rateLimits, $keyRing, $clock),
+            new ClientIp($config->trustedProxies),
+            $clock,
+        );
     }
 
     public function handle(Request $request): Response
@@ -109,11 +128,15 @@ final readonly class App
         $csrf = new Csrf($this->config->isHttps());
         $csrfToken = $csrf->token($request);
 
-        // ramasse-miettes : chaque requête purge les secrets expirés
-        $this->secrets->purgeExpired();
+        // ramasse-miettes : purge des secrets expirés, au plus une fois par minute
+        $this->maintenance->runIfDue($this->clock->now());
 
         $route = $request->method . ' ' . $request->path;
-        if ($request->method === 'POST' && !$csrf->isValid($request)) {
+        $retryAfter = $request->method === 'POST' ? $this->rateLimit($request) : null;
+        if ($retryAfter !== null) {
+            $response = $this->error($view, 'error.rate_limited', 429, $csrfToken)
+                ->withHeader('Retry-After', (string)$retryAfter);
+        } elseif ($request->method === 'POST' && !$csrf->isValid($request)) {
             $response = $this->error($view, 'error.csrf', 403, $csrfToken);
         } else {
             $response = match ($route) {
@@ -130,6 +153,21 @@ final readonly class App
         $response = $response->withHeader('Content-Type', 'text/html; charset=UTF-8');
         $response = $csrf->attach($request, $response, $csrfToken);
         return SecurityHeaders::apply($response, $this->config);
+    }
+
+    /**
+     * Applique les limites de débit aux actions (POST) ; retourne le délai
+     * d'attente en secondes si la limite est atteinte, null sinon
+     */
+    private function rateLimit(Request $request): ?int
+    {
+        $ip = $this->clientIp->resolve($request);
+        $client = $ip === null ? 'unknown' : ClientIp::bucket($ip);
+        if ($request->path === '/') {
+            return $this->rateLimiter->consume('create', $client, $this->config->createLimitPerMinute, 60)
+                ?? $this->rateLimiter->consume('create', $client, $this->config->createLimitPerHour, 3600);
+        }
+        return $this->rateLimiter->consume('read', $client, $this->config->readLimitPerMinute, 60);
     }
 
     /**
@@ -180,8 +218,8 @@ final readonly class App
 
         try {
             $created = $this->secrets->create($shareRequest);
-        } catch (StorageFullException) {
-            return $this->error($view, 'error.storage_full', 503, $csrfToken);
+        } catch (QuotaExceededException $e) {
+            return $this->error($view, $e->messageKey, 503, $csrfToken);
         }
         $shareUrl = $this->config->appUrl . self::SHARE_PATH . '#' . $created->token;
         return new Response(

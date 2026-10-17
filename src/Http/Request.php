@@ -19,6 +19,7 @@ final readonly class Request
      * @param array<array-key, mixed>   $post
      * @param array<array-key, mixed>   $cookies
      * @param array<string, string>     $headers en minuscules
+     * @param string                    $remoteAddr adresse IP de la connexion (proxy éventuel)
      */
     public function __construct(
         public string $method,
@@ -26,6 +27,7 @@ final readonly class Request
         public array $post = [],
         public array $cookies = [],
         public array $headers = [],
+        public string $remoteAddr = '',
     ) {
     }
 
@@ -45,6 +47,7 @@ final readonly class Request
             post: $_POST,
             cookies: $_COOKIE,
             headers: $headers,
+            remoteAddr: is_string($_SERVER['REMOTE_ADDR'] ?? null) ? $_SERVER['REMOTE_ADDR'] : '',
         );
     }
 

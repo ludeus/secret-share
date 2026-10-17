@@ -18,7 +18,7 @@ use SecretShare\Secret\InvalidPasswordException;
 use SecretShare\Secret\SecretNotFoundException;
 use SecretShare\Secret\SecretService;
 use SecretShare\Secret\ShareRequest;
-use SecretShare\Secret\StorageFullException;
+use SecretShare\Secret\QuotaExceededException;
 use SecretShare\Storage\SecretRepository;
 use SecretShare\Test\Factory;
 use SecretShare\Test\FrozenClock;
@@ -263,13 +263,31 @@ final class SecretServiceTest extends TestCase
 
     public function testStorageQuota(): void
     {
-        $pdo = Factory::pdo();
-        $service = Factory::service($pdo, config: Factory::config(maxStoredSecrets: 2));
+        $service = Factory::service(config: Factory::config(maxStoredSecrets: 2));
         $service->create(self::request());
         $service->create(self::request());
 
-        $this->expectException(StorageFullException::class);
-        $service->create(self::request());
+        try {
+            $service->create(self::request());
+            $this->fail('QuotaExceededException attendue');
+        } catch (QuotaExceededException $e) {
+            $this->assertSame('error.storage_full', $e->messageKey);
+        }
+    }
+
+    public function testUnlimitedSecretsHaveTheirOwnQuota(): void
+    {
+        $service = Factory::service(config: Factory::config(maxUnlimitedSecrets: 1));
+        $service->create(self::request(duration: Duration::Unlimited));
+
+        try {
+            $service->create(self::request(duration: Duration::Unlimited));
+            $this->fail('QuotaExceededException attendue');
+        } catch (QuotaExceededException $e) {
+            $this->assertSame('error.unlimited_quota', $e->messageKey);
+        }
+        // les secrets avec une durée restent possibles
+        $this->assertNotNull($service->create(self::request(duration: Duration::OneDay))->expiresAt);
     }
 
     public function testRevoke(): void
@@ -283,17 +301,6 @@ final class SecretServiceTest extends TestCase
 
         $this->expectException(SecretNotFoundException::class);
         $this->service->reveal($created->token, null);
-    }
-
-    public function testPurgeExpired(): void
-    {
-        $this->service->create(self::request(duration: Duration::TenMinutes));
-        $this->service->create(self::request(duration: Duration::OneHour));
-        $this->service->create(self::request(duration: Duration::Unlimited));
-        $this->clock->advance(601);
-
-        $this->assertSame(1, $this->service->purgeExpired());
-        $this->assertSame(2, $this->storedSecrets());
     }
 
     public function testLargeUnicodeSecret(): void

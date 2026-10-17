@@ -65,6 +65,11 @@ Une valeur invalide empêche le conteneur de démarrer, avec un message explicit
 | `PASSWORD_MAX_ATTEMPTS` | `5`                     | Essais de mot de passe avant destruction du secret                       |
 | `MAX_STORED_SECRETS`    | `100000`                | Nombre maximal de secrets conservés ; au-delà, la création est refusée   |
 | `ARGON2_CONCURRENCY`    | `2`                     | Calculs Argon2id simultanés (64 Mio chacun), borne la mémoire utilisée   |
+| `MAX_UNLIMITED_SECRETS` | `1000`                  | Nombre maximal de secrets « sans limite » de durée                       |
+| `RATE_LIMIT_CREATE_PER_MINUTE` | `5`              | Créations par visiteur et par minute (`0` : pas de limite)               |
+| `RATE_LIMIT_CREATE_PER_HOUR`   | `30`             | Créations par visiteur et par heure (`0` : pas de limite)                |
+| `RATE_LIMIT_READ_PER_MINUTE`   | `30`             | Ouvertures et destructions par visiteur et par minute                    |
+| `TRUSTED_PROXIES`       | plages privées          | Proxys dont l'en-tête `X-Forwarded-For` est pris en compte               |
 | `DEFAULT_LOCALE`        | `fr`                    | Langue si le navigateur n'en propose aucune disponible (`fr`, `en`)      |
 | `SOURCE_URL`            | lien GitHub du projet   | Lien « Code source » du pied de page (exigé par l'AGPL)                  |
 | `DATABASE_PATH`         | `/app/data/secret-share.sqlite` | Emplacement de la base SQLite                                    |
@@ -100,10 +105,38 @@ location / {
 }
 ```
 
-L'application borne elle-même sa consommation (calculs Argon2id simultanés, nombre de
-processus Apache, nombre de secrets stockés) mais ne conserve aucune adresse IP : si l'instance
-est publique, limitez le débit des requêtes `POST` au niveau du proxy (`limit_req` d'nginx,
-`mod_evasive`, fail2ban…).
+### Protection contre les abus
+
+- **Limitation de débit par visiteur** : créations (5 par minute, 30 par heure) et ouvertures
+  (30 par minute) ; au-delà, la réponse est `429 Too Many Requests`. Aucune adresse IP n'est
+  stockée : seule une empreinte HMAC, dont la clé change chaque jour, est conservée le temps de
+  la fenêtre. Les adresses IPv6 sont regroupées par préfixe `/64`.
+- **Derrière un reverse proxy**, l'adresse du visiteur est lue dans `X-Forwarded-For`, mais
+  uniquement si la connexion provient d'un proxy listé dans `TRUSTED_PROXIES` (par défaut les
+  plages privées, donc le proxy de l'hôte vu à travers Docker). Si le conteneur est exposé
+  directement sur un réseau privé non maîtrisé, restreignez cette liste.
+- **Quotas** : `MAX_STORED_SECRETS` protège le disque ; `MAX_UNLIMITED_SECRETS` empêche les
+  secrets sans expiration de bloquer durablement les créations.
+- **Ressources bornées** : calculs Argon2id simultanés, nombre de processus Apache, mémoire du
+  conteneur, taille des requêtes.
+
+Ces limites protègent l'application ; pour protéger aussi le serveur web frontal (et les autres
+sites qu'il héberge) contre un flot de requêtes, ajoutez une limitation au niveau du proxy :
+`limit_req` d'nginx, ou `mod_qos` pour Apache, par exemple :
+
+```apache
+# configuration globale : 120 requêtes par minute et par adresse vers le vhost marqué
+QS_ClientEntries 50000
+QS_ClientEventLimitCount 120 60 SECRET_SHARE
+
+<VirtualHost *:443>
+    ServerName secret.example.org
+    SetEnv SECRET_SHARE 1
+    # au plus 20 requêtes simultanées vers l'application
+    QS_LocRequestLimit / 20
+    # …
+</VirtualHost>
+```
 
 ## Fonctionnement et sécurité
 

@@ -33,6 +33,9 @@ final class Factory
         string $appUrl = self::APP_URL,
         int $shortCodeLength = 10,
         int $maxStoredSecrets = 1000,
+        int $maxUnlimitedSecrets = 100,
+        int $createLimitPerMinute = 5,
+        int $readLimitPerMinute = 30,
     ): Config {
         return new Config(
             appSecret: $appSecret,
@@ -42,6 +45,10 @@ final class Factory
             maxPasswordAttempts: 3,
             databasePath: ':memory:',
             maxStoredSecrets: $maxStoredSecrets,
+            maxUnlimitedSecrets: $maxUnlimitedSecrets,
+            trustedProxies: ['172.16.0.0/12'],
+            createLimitPerMinute: $createLimitPerMinute,
+            readLimitPerMinute: $readLimitPerMinute,
         );
     }
 

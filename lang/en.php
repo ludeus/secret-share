@@ -120,5 +120,7 @@ return [
     'error.password_invalid' => 'The password contains invalid characters.',
     'error.password_too_long' => 'The password must not exceed 1024 characters.',
     'error.storage_full' => 'The service has reached its maximum storage capacity. Please try again later.',
+    'error.rate_limited' => 'Too many requests from your connection. Please wait a few minutes before trying again.',
+    'error.unlimited_quota' => 'Too many secrets without expiration are already stored: please choose an expiration.',
     'error.short_url_forbidden' => 'A short URL requires single use or an expiration.',
 ];

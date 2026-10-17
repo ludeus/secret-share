@@ -57,13 +57,20 @@ final readonly class SecretService
     }
 
     /**
-     * @throws StorageFullException si le nombre maximal de secrets stockés est atteint
+     * @throws QuotaExceededException si un quota de stockage est atteint
      */
     public function create(ShareRequest $request): CreatedSecret
     {
         // quota global : empêche de remplir le disque par des créations en masse
         if ($this->repository->count() >= $this->config->maxStoredSecrets) {
-            throw new StorageFullException();
+            throw new QuotaExceededException('error.storage_full');
+        }
+        // quota dédié aux secrets sans expiration : ils ne doivent jamais pouvoir saturer durablement le quota global
+        if (
+            $request->duration === Duration::Unlimited
+            && $this->repository->countUnlimited() >= $this->config->maxUnlimitedSecrets
+        ) {
+            throw new QuotaExceededException('error.unlimited_quota');
         }
         $expiresAt = $request->duration->expiresAt($this->clock->now());
         $revokeToken = Random::token(self::REVOKE_TOKEN_BYTES);
@@ -178,14 +185,6 @@ final readonly class SecretService
         return $this->repository->deleteByRevokeHash(
             $this->keyRing->lookupHash(self::NS_REVOKE, $revokeToken)
         );
-    }
-
-    /**
-     * Supprime les secrets expirés
-     */
-    public function purgeExpired(): int
-    {
-        return $this->repository->purgeExpired($this->clock->now());
     }
 
     private function encodeJwt(string $jti, string $blob, ?int $expiresAt): string

@@ -219,6 +219,71 @@ final class AppTest extends TestCase
         $this->assertSame(404, $this->post('/s', ['token' => $token, 'password' => 'p@ss'])->status);
     }
 
+    /**
+     * @param array<string, string> $data
+     */
+    private function postFrom(string $ip, string $path, array $data): Response
+    {
+        return $this->app->handle(
+            new Request(
+                'POST',
+                $path,
+                $data + ['csrf_token' => self::CSRF],
+                ['__Host-csrf' => self::CSRF],
+                ['sec-fetch-site' => 'same-origin', 'accept-language' => 'fr', 'x-forwarded-for' => $ip],
+                '172.20.0.1'
+            )
+        );
+    }
+
+    public function testCreationIsRateLimitedPerClient(): void
+    {
+        $data = ['secret' => 'x', 'duration' => '1h', 'single_use' => '1'];
+        for ($i = 0; $i < 5; $i++) {
+            $this->assertSame(201, $this->postFrom('198.51.100.1', '/', $data)->status);
+        }
+
+        $limited = $this->postFrom('198.51.100.1', '/', $data);
+        $this->assertSame(429, $limited->status);
+        $this->assertSame('60', $limited->headers['Retry-After']);
+        $this->assertStringContainsString('Trop de requêtes', $limited->body);
+
+        // un autre visiteur derrière le même proxy n'est pas affecté
+        $this->assertSame(201, $this->postFrom('198.51.100.2', '/', $data)->status);
+
+        $this->clock->advance(60);
+        $this->assertSame(201, $this->postFrom('198.51.100.1', '/', $data)->status);
+    }
+
+    public function testRevealIsRateLimited(): void
+    {
+        for ($i = 0; $i < 30; $i++) {
+            $this->assertSame(404, $this->postFrom('198.51.100.1', '/s', ['token' => 'abcdefghjk'])->status);
+        }
+        $this->assertSame(429, $this->postFrom('198.51.100.1', '/s', ['token' => 'abcdefghjk'])->status);
+    }
+
+    public function testUnlimitedQuotaMessage(): void
+    {
+        $app = App::create(
+            Factory::config(maxUnlimitedSecrets: 0),
+            Factory::pdo(),
+            $this->clock,
+            Factory::envelope()
+        );
+        $response = $app->handle(
+            new Request(
+                'POST',
+                '/',
+                ['secret' => 'x', 'duration' => 'none', 'single_use' => '1', 'csrf_token' => self::CSRF],
+                ['__Host-csrf' => self::CSRF]
+            )
+        );
+
+        $this->assertSame(503, $response->status);
+        $this->assertStringContainsString('choisissez une durée de validité', $response->body);
+    }
+
     public function testRevokeFlow(): void
     {
         $response = $this->post('/', ['secret' => 'abc', 'duration' => '1h']);

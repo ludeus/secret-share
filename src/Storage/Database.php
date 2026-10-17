@@ -70,5 +70,20 @@ final class Database
             )'
         );
         $pdo->exec('CREATE INDEX IF NOT EXISTS secrets_expires_at ON secrets (expires_at)');
+        // compteurs de limitation de débit : empreinte du client, jamais l'adresse IP
+        $pdo->exec(
+            'CREATE TABLE IF NOT EXISTS rate_limits (
+                bucket TEXT PRIMARY KEY NOT NULL,
+                hits INTEGER NOT NULL,
+                expires_at INTEGER NOT NULL
+            )'
+        );
+        $pdo->exec('CREATE INDEX IF NOT EXISTS rate_limits_expires_at ON rate_limits (expires_at)');
+        $pdo->exec(
+            'CREATE TABLE IF NOT EXISTS meta (
+                name TEXT PRIMARY KEY NOT NULL,
+                value INTEGER NOT NULL
+            )'
+        );
     }
 }

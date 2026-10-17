@@ -10,6 +10,8 @@ declare(strict_types=1);
 
 namespace SecretShare;
 
+use SecretShare\Http\ClientIp;
+
 /**
  * Configuration de l'application, construite et validée à partir des
  * variables d'environnement. Toute valeur invalide empêche le démarrage :
@@ -35,6 +37,12 @@ final readonly class Config
         public string $sourceUrl = self::DEFAULT_SOURCE_URL,
         public int $maxStoredSecrets = 100000,
         public int $argon2Concurrency = 2,
+        public int $maxUnlimitedSecrets = 1000,
+        /** @var list<string> */
+        public array $trustedProxies = [],
+        public int $createLimitPerMinute = 5,
+        public int $createLimitPerHour = 30,
+        public int $readLimitPerMinute = 30,
     ) {
         if (strlen($appSecret) < self::MIN_SECRET_KEY_LENGTH) {
             throw new ConfigException(
@@ -67,6 +75,11 @@ final readonly class Config
         if ($maxStoredSecrets < 1) {
             throw new ConfigException('MAX_STORED_SECRETS doit être un entier strictement positif.');
         }
+        foreach ($trustedProxies as $range) {
+            if (!ClientIp::isValidRange($range)) {
+                throw new ConfigException(sprintf('TRUSTED_PROXIES : adresse ou plage CIDR invalide « %s ».', $range));
+            }
+        }
         if ($argon2Concurrency < 1 || $argon2Concurrency > 64) {
             throw new ConfigException('ARGON2_CONCURRENCY doit être compris entre 1 et 64.');
         }
@@ -96,6 +109,11 @@ final readonly class Config
             sourceUrl: self::string($env, 'SOURCE_URL', self::DEFAULT_SOURCE_URL),
             maxStoredSecrets: self::int($env, 'MAX_STORED_SECRETS', 100000),
             argon2Concurrency: self::int($env, 'ARGON2_CONCURRENCY', 2),
+            maxUnlimitedSecrets: self::int($env, 'MAX_UNLIMITED_SECRETS', 1000),
+            trustedProxies: self::list($env, 'TRUSTED_PROXIES'),
+            createLimitPerMinute: self::int($env, 'RATE_LIMIT_CREATE_PER_MINUTE', 5),
+            createLimitPerHour: self::int($env, 'RATE_LIMIT_CREATE_PER_HOUR', 30),
+            readLimitPerMinute: self::int($env, 'RATE_LIMIT_READ_PER_MINUTE', 30),
         );
     }
 
@@ -117,6 +135,17 @@ final readonly class Config
             return $default;
         }
         return trim($value);
+    }
+
+    /**
+     * Liste séparée par des virgules
+     *
+     * @param array<string, mixed> $env
+     * @return list<string>
+     */
+    private static function list(array $env, string $name): array
+    {
+        return array_values(array_filter(array_map('trim', explode(',', self::string($env, $name, '')))));
     }
 
     /**

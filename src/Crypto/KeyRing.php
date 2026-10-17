@@ -20,12 +20,23 @@ final readonly class KeyRing
     private string $jwtKey;
     private string $lookupKey;
     private string $encryptionSalt;
+    private string $rateLimitKey;
 
     public function __construct(#[\SensitiveParameter] string $appSecret)
     {
         $this->jwtKey = hash_hkdf('sha256', $appSecret, 32, 'secret-share/v1/jwt');
         $this->lookupKey = hash_hkdf('sha256', $appSecret, 32, 'secret-share/v1/lookup');
         $this->encryptionSalt = hash_hkdf('sha256', $appSecret, 32, 'secret-share/v1/encryption');
+        $this->rateLimitKey = hash_hkdf('sha256', $appSecret, 32, 'secret-share/v1/rate-limit');
+    }
+
+    /**
+     * Empreinte d'un client pour la limitation de débit. La clé change chaque
+     * jour : les empreintes de jours différents ne peuvent pas être reliées.
+     */
+    public function clientHash(string $client, string $day): string
+    {
+        return hash_hmac('sha256', $client, hash_hmac('sha256', $day, $this->rateLimitKey, true));
     }
 
     /**

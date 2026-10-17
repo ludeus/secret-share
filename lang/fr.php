@@ -121,5 +121,8 @@ return [
     'error.password_invalid' => 'Le mot de passe contient des caractères invalides.',
     'error.password_too_long' => 'Le mot de passe ne doit pas dépasser 1024 caractères.',
     'error.storage_full' => 'Le service a atteint sa capacité maximale de stockage. Réessayez plus tard.',
+    'error.rate_limited' => 'Trop de requêtes depuis votre connexion. Patientez quelques minutes avant de réessayer.',
+    'error.unlimited_quota' => 'Trop de secrets sans limite de durée sont déjà stockés : '
+        . 'choisissez une durée de validité.',
     'error.short_url_forbidden' => 'L\'URL courte nécessite l\'usage unique ou une durée limitée.',
 ];

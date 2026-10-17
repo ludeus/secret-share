@@ -31,6 +31,11 @@ final class ConfigTest extends TestCase
         $this->assertSame(5, $config->maxPasswordAttempts);
         $this->assertSame('fr', $config->defaultLocale);
         $this->assertTrue($config->isHttps());
+        $this->assertSame([], $config->trustedProxies);
+        $this->assertSame(5, $config->createLimitPerMinute);
+        $this->assertSame(30, $config->createLimitPerHour);
+        $this->assertSame(30, $config->readLimitPerMinute);
+        $this->assertSame(1000, $config->maxUnlimitedSecrets);
     }
 
     public function testFromEnvironmentReadsValues(): void
@@ -45,6 +50,11 @@ final class ConfigTest extends TestCase
                 'SOURCE_URL' => 'https://example.org/src',
                 'MAX_STORED_SECRETS' => '42',
                 'ARGON2_CONCURRENCY' => '4',
+                'MAX_UNLIMITED_SECRETS' => '7',
+                'TRUSTED_PROXIES' => ' 127.0.0.1, 172.16.0.0/12 ,::1 ',
+                'RATE_LIMIT_CREATE_PER_MINUTE' => '0',
+                'RATE_LIMIT_CREATE_PER_HOUR' => '12',
+                'RATE_LIMIT_READ_PER_MINUTE' => '9',
             ]
         );
 
@@ -56,6 +66,11 @@ final class ConfigTest extends TestCase
         $this->assertSame('https://example.org/src', $config->sourceUrl);
         $this->assertSame(42, $config->maxStoredSecrets);
         $this->assertSame(4, $config->argon2Concurrency);
+        $this->assertSame(7, $config->maxUnlimitedSecrets);
+        $this->assertSame(['127.0.0.1', '172.16.0.0/12', '::1'], $config->trustedProxies);
+        $this->assertSame(0, $config->createLimitPerMinute);
+        $this->assertSame(12, $config->createLimitPerHour);
+        $this->assertSame(9, $config->readLimitPerMinute);
     }
 
     public function testHttpUrlIsNotHttps(): void
@@ -83,6 +98,8 @@ final class ConfigTest extends TestCase
         yield 'tentatives nulles' => [['PASSWORD_MAX_ATTEMPTS' => '0'] + self::VALID_ENV];
         yield 'quota nul' => [['MAX_STORED_SECRETS' => '0'] + self::VALID_ENV];
         yield 'concurrence argon2 nulle' => [['ARGON2_CONCURRENCY' => '0'] + self::VALID_ENV];
+        yield 'proxy invalide' => [['TRUSTED_PROXIES' => '10.0.0.0/33'] + self::VALID_ENV];
+        yield 'proxy non ip' => [['TRUSTED_PROXIES' => 'localhost'] + self::VALID_ENV];
         yield 'langue inconnue' => [['DEFAULT_LOCALE' => 'de'] + self::VALID_ENV];
     }
 

@@ -138,12 +138,21 @@ final readonly class SecretRepository
     }
 
     /**
-     * Nombre de secrets stockés (supervision et tests)
+     * Nombre de secrets sans date d'expiration
+     */
+    public function countUnlimited(): int
+    {
+        $count = $this->pdo->query('SELECT COUNT(*) FROM secrets WHERE expires_at IS NULL');
+        return $count === false ? 0 : self::int($count->fetchColumn());
+    }
+
+    /**
+     * Nombre de secrets stockés
      */
     public function count(): int
     {
         $count = $this->pdo->query('SELECT COUNT(*) FROM secrets');
-        return $count === false ? 0 : (int)$count->fetchColumn();
+        return $count === false ? 0 : self::int($count->fetchColumn());
     }
 
     /**

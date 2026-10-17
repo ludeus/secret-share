@@ -8,6 +8,14 @@
 /.phpcs-cache
 /coverage/
 
+# Tests fonctionnels
+/tests/e2e/node_modules/
+/tests/e2e/shots/
+
+# Maintenance automatisée : configuration locale et journaux
+/maintenance/maintenance.env
+/maintenance/logs/
+
 # Données
 /data/
 *.sqlite

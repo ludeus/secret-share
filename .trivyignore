@@ -1,0 +1,8 @@
+# Secret Share - exceptions Trivy
+#
+# Une vulnérabilité ne doit être ignorée que si elle ne peut pas être corrigée (pas de
+# version corrigée disponible) ou si elle ne concerne pas l'application. Chaque entrée
+# indique la raison, la date et une date de réexamen, au format :
+#
+#   # AAAA-MM-JJ <paquet> : <raison> - réexamen avant AAAA-MM-JJ
+#   CVE-AAAA-NNNNN

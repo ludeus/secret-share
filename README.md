@@ -313,9 +313,56 @@ bin/
 ├── unblock              gestion des compteurs de limitation de débit (appelé par ./unblock.sh)
 └── check-translations   vérification des fichiers de langue
 docker/                  configuration Apache, PHP et point d'entrée du conteneur
+maintenance/             maintenance mensuelle automatisée et son timer systemd
+tests/e2e/               tests fonctionnels dans un navigateur
 install.sh               création de .env avec une clé APP_SECRET aléatoire
 unblock.sh               déblocage d'adresses IP (root ou groupe docker)
 ```
+
+### Tests fonctionnels
+
+`tests/e2e/` (Node.js 22.12+) pilote Chrome pour vérifier les parcours complets (création, ouverture, mot de
+passe, URL courte, destruction, limites, langues, affichage mobile et sombre) :
+
+```bash
+npm ci --prefix tests/e2e
+E2E_BASE_URL=http://127.0.0.1:8765 E2E_RATE_LIMIT_PAUSE=0 node tests/e2e/e2e.js
+```
+
+`E2E_RATE_LIMIT_PAUSE=0` suppose une instance sans limitation de débit
+(`RATE_LIMIT_*=0`) ; sans cette variable, le test patiente une minute pour respecter la
+limite de créations. La CI les exécute sur l'image construite.
+
+### Maintenance automatisée
+
+`maintenance/monthly.sh` enchaîne chaque mois :
+
+1. mise à jour des dépendances (Composer, tests e2e) et reconstruction de l'image avec les
+   derniers correctifs de l'image de base et de Debian ;
+2. tous les tests : `composer check`, shellcheck, tests fonctionnels dans un navigateur ;
+3. analyse Trivy de l'image et des dépendances (HIGH et CRITICAL corrigeables) ; si une
+   vulnérabilité est détectée, Claude Code la corrige par une montée de version, ou à défaut
+   l'ajoute à `.trivyignore` avec sa justification et une date de réexamen, puis les tests
+   et l'analyse sont relancés ;
+4. si l'image ou le code ont changé : nouvelle version de correctif (version, CHANGELOG,
+   tag), publiée par la CI ;
+5. mise à jour du serveur, vérification de l'image déployée et tests fonctionnels en
+   production, avec retour automatique à la version précédente en cas d'échec ;
+6. notification du résumé et journal dans `maintenance/logs/`.
+
+```bash
+cp maintenance/maintenance.env.dist maintenance/maintenance.env   # puis adapter (ignoré par git)
+maintenance/monthly.sh --dry-run       # tout tester sans publier ni déployer
+maintenance/systemd/install.sh         # timer systemd utilisateur : le 1er de chaque mois
+```
+
+Options : `--no-deploy` (publie sans mettre à jour le serveur), `--force-release` (publie même
+sans changement). Prérequis : Docker, Node.js 22.12+ et Chrome, un accès SSH sans mot de passe au
+serveur, un token GitHub (écriture sur le contenu, lecture des Actions) et, pour la
+correction automatique, [Claude Code](https://claude.com/claude-code).
+
+La CI applique aussi Trivy à chaque push : une vulnérabilité corrigeable non traitée fait
+échouer la publication.
 
 ### Publication
 

@@ -4,6 +4,23 @@ Toutes les évolutions notables sont consignées ici.
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le projet
 respecte le [versionnage sémantique](https://semver.org/lang/fr/).
 
+## [Non publié]
+
+### Ajouts
+
+- Maintenance mensuelle automatisée (`maintenance/monthly.sh` et son timer systemd) :
+  mises à jour, tests, analyse Trivy avec correction par Claude Code, publication d'un
+  correctif et mise à jour du serveur avec retour arrière en cas d'échec.
+- Tests fonctionnels dans un navigateur versionnés (`tests/e2e/`) et exécutés en CI.
+- Analyse Trivy de l'image et des dépendances en CI ; exceptions documentées dans
+  `.trivyignore`.
+
+### Sécurité
+
+- L'image applique les correctifs de sécurité Debian publiés depuis l'image de base
+  (curl : CVE-2026-8286, CVE-2026-8927, CVE-2026-92392).
+- `puppeteer-core` 25 pour les tests e2e : retire `basic-ftp` vulnérable (CVE-2026-102990).
+
 ## [1.2.2] - 2026-10-17
 
 ### Modifications

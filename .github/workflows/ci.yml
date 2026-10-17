@@ -41,7 +41,17 @@ jobs:
         run: composer test
 
       - name: Shellcheck
-        run: shellcheck install.sh unblock.sh docker/entrypoint.sh
+        run: shellcheck install.sh unblock.sh docker/entrypoint.sh maintenance/monthly.sh maintenance/systemd/install.sh
+
+      - name: Vulnérabilités des dépendances (Trivy)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          trivyignores: .trivyignore
+          exit-code: '1'
 
   docker:
     name: Image Docker
@@ -67,6 +77,30 @@ jobs:
           for i in $(seq 1 20); do curl -fsS http://localhost:8080/health && break; sleep 1; done
           curl -fsS http://localhost:8080/ | grep -q 'name="secret"'
           docker rm -f smoke
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Tests fonctionnels dans un navigateur
+        run: |
+          docker run -d --name e2e -p 8081:8080 \
+            -e APP_SECRET="$(openssl rand -base64 48)" -e APP_URL=http://127.0.0.1:8081 \
+            -e RATE_LIMIT_CREATE_PER_MINUTE=0 -e RATE_LIMIT_CREATE_PER_HOUR=0 -e RATE_LIMIT_READ_PER_MINUTE=0 \
+            secret-share:ci
+          for i in $(seq 1 20); do curl -fsS http://127.0.0.1:8081/health && break; sleep 1; done
+          npm ci --prefix tests/e2e --no-audit --no-fund
+          E2E_BASE_URL=http://127.0.0.1:8081 E2E_RATE_LIMIT_PAUSE=0 node tests/e2e/e2e.js
+          docker rm -f e2e
+
+      - name: Analyse de vulnérabilités (Trivy)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: secret-share:ci
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          trivyignores: .trivyignore
+          exit-code: '1'
 
       - name: Le conteneur refuse de démarrer sans APP_SECRET
         run: |

@@ -28,6 +28,11 @@ RUN composer install --no-interaction --no-progress --prefer-dist --no-scripts
 # ---------------------------------------------------------------------------
 FROM php:${PHP_VERSION}-apache AS base
 
+# correctifs de sécurité Debian publiés depuis la construction de l'image officielle
+RUN apt-get update \
+    && apt-get upgrade -y --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/*
+
 # opcache pour les performances ; sodium et pdo_sqlite sont fournis par l'image officielle
 RUN docker-php-ext-install -j"$(nproc)" opcache \
     && a2enmod headers \

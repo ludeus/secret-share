@@ -389,18 +389,32 @@ limite de créations. La CI les exécute sur l'image construite.
 
 `maintenance/monthly.sh` enchaîne chaque mois :
 
-1. mise à jour des dépendances (Composer, tests e2e) et reconstruction de l'image avec les
-   derniers correctifs de l'image de base et de Debian ;
-2. tous les tests : `composer check`, shellcheck, tests fonctionnels dans un navigateur ;
-3. analyse Trivy de l'image et des dépendances (HIGH et CRITICAL corrigeables) ; si une
+1. **montées de version** (`maintenance/upgrade.py`) :
+   - PHP : passage au dernier cycle stable, sorti depuis au moins 90 jours et disposant d'une
+     image officielle (support vérifié sur [endoflife.date](https://endoflife.date/php), alerte
+     à l'approche de la fin de vie) ; image Docker, `composer.json` et CI sont mis à jour, puis
+     le code est modernisé par [Rector](https://getrector.com) ;
+   - dépendances Composer et npm, **versions majeures comprises** : les contraintes de
+     `composer.json` sont élargies si nécessaire ;
+   - Node.js et actions de la CI, images d'outils (Composer, ShellCheck) ;
+   - images de base du `Dockerfile` **figées par empreinte** (`@sha256`) sur leur dernière
+     version : chaque version publiée correspond à une image de base précise ;
+2. mises à jour mineures des dépendances et reconstruction de l'image ;
+3. tous les tests : `composer check`, shellcheck, tests fonctionnels dans un navigateur ; si
+   une montée de version les fait échouer, Claude Code adapte le code (avec Rector), et à
+   défaut les montées de version sont abandonnées et signalées dans le résumé ;
+4. analyse Trivy de l'image et des dépendances (HIGH et CRITICAL corrigeables) ; si une
    vulnérabilité est détectée, Claude Code la corrige par une montée de version, ou à défaut
    l'ajoute à `.trivyignore` avec sa justification et une date de réexamen, puis les tests
    et l'analyse sont relancés ;
-4. si l'image ou le code ont changé : nouvelle version de correctif (version, CHANGELOG,
-   tag), publiée par la CI ;
-5. mise à jour du serveur, vérification de l'image déployée et tests fonctionnels en
-   production, avec retour automatique à la version précédente en cas d'échec ;
-6. notification du résumé et journal dans `maintenance/logs/`.
+5. si quelque chose a changé : nouvelle version (mineure si PHP ou une dépendance majeure a
+   changé, correctif sinon), avec CHANGELOG et tag, publiée par la CI ;
+6. mise à jour du serveur (aussi lorsqu'il n'est pas sur la dernière version publiée),
+   vérification de l'image déployée et tests fonctionnels en production (second essai en
+   cas d'échec), avec retour automatique à la version précédente en cas d'échec ;
+7. notification du résumé et journal dans `maintenance/logs/`.
+
+`maintenance/upgrade.py --dry-run` affiche les montées de version possibles sans rien modifier.
 
 ```bash
 cp maintenance/maintenance.env.dist maintenance/maintenance.env   # puis adapter (ignoré par git)

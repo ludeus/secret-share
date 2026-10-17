@@ -4,6 +4,18 @@ Toutes les évolutions notables sont consignées ici.
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le projet
 respecte le [versionnage sémantique](https://semver.org/lang/fr/).
 
+## [Non publié]
+
+### Maintenance automatisée
+
+- Montées de version : PHP (dernier cycle stable, code modernisé par Rector), dépendances
+  Composer et npm y compris majeures, Node.js et actions de la CI, images d'outils.
+- Images de base du `Dockerfile` figées par empreinte (`@sha256`), mises à jour chaque mois.
+- Adaptation du code par Claude Code si une montée de version fait échouer les tests,
+  abandon des montées de version à défaut.
+- Mise à jour du serveur aussi lorsqu'il n'est pas sur la dernière version publiée, second
+  essai des tests en production avant tout retour en arrière.
+
 ## [1.2.3] - 2026-10-17
 
 ### Ajouts

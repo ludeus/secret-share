@@ -25,3 +25,6 @@
 /.idea/
 /.vscode/
 .DS_Store
+
+# Cache Python
+__pycache__/

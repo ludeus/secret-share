@@ -43,6 +43,9 @@ jobs:
       - name: Shellcheck
         run: shellcheck install.sh unblock.sh check-token.sh docker/entrypoint.sh maintenance/monthly.sh maintenance/systemd/install.sh
 
+      - name: Outil de montée de version
+        run: python3 -m py_compile maintenance/upgrade.py
+
       - name: Vulnérabilités des dépendances (Trivy)
         uses: aquasecurity/trivy-action@v0.36.0
         with:

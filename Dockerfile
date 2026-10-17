@@ -6,11 +6,13 @@
 #   docker build --target test -t secret-share:test .  # image avec outils de test
 
 ARG PHP_VERSION=8.3
+# empreinte de php:${PHP_VERSION}-apache, mise à jour par maintenance/upgrade.py
+ARG PHP_IMAGE_DIGEST=sha256:f8506a19d79cad7fcf0c8049f1ed2208824961018fdc10bd80f324094dcd36bd
 
 # ---------------------------------------------------------------------------
 # Dépendances Composer (sans les outils de développement)
 # ---------------------------------------------------------------------------
-FROM composer:2 AS vendor
+FROM composer:2@sha256:af98f42dfff7c68ba8d53c2164fd9fde1087b7d449514baa38c418b1f6bc4bac AS vendor
 WORKDIR /app
 COPY composer.json composer.lock ./
 RUN composer install --no-dev --no-interaction --no-progress --prefer-dist --no-autoloader --no-scripts
@@ -18,7 +20,7 @@ COPY src/ src/
 RUN composer dump-autoload --no-dev --classmap-authoritative
 
 # dépendances de développement, pour la cible « test »
-FROM composer:2 AS vendor-dev
+FROM composer:2@sha256:af98f42dfff7c68ba8d53c2164fd9fde1087b7d449514baa38c418b1f6bc4bac AS vendor-dev
 WORKDIR /app
 COPY composer.json composer.lock ./
 RUN composer install --no-interaction --no-progress --prefer-dist --no-scripts
@@ -26,7 +28,7 @@ RUN composer install --no-interaction --no-progress --prefer-dist --no-scripts
 # ---------------------------------------------------------------------------
 # Base : Apache + PHP, durcis
 # ---------------------------------------------------------------------------
-FROM php:${PHP_VERSION}-apache AS base
+FROM php:${PHP_VERSION}-apache@${PHP_IMAGE_DIGEST} AS base
 
 # correctifs de sécurité Debian publiés depuis la construction de l'image officielle
 RUN apt-get update \
@@ -66,7 +68,7 @@ CMD ["apache2-foreground"]
 # Test : dépendances de développement, pour lancer « composer check » en CI
 # ---------------------------------------------------------------------------
 FROM base AS test
-COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+COPY --from=composer:2@sha256:af98f42dfff7c68ba8d53c2164fd9fde1087b7d449514baa38c418b1f6bc4bac /usr/bin/composer /usr/bin/composer
 COPY --chown=www-data:www-data . .
 COPY --chown=www-data:www-data --from=vendor-dev /app/vendor/ vendor/
 RUN chown www-data:www-data /app

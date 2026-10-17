@@ -9,21 +9,33 @@
 #   --force-release  publie un patch même si rien n'a changé
 #
 # Étapes :
-#   1. mise à jour des dépendances (Composer, tests e2e) et reconstruction de l'image
-#      avec les derniers correctifs de l'image de base et de Debian
-#   2. tests : standard de codage, traductions, analyse statique, PHPUnit, tests e2e
+#   1. montées de version (maintenance/upgrade.py) : PHP, dépendances Composer et npm
+#      (versions majeures comprises), Node.js et actions de la CI, images d'outils,
+#      images de base figées par empreinte ; puis mises à jour mineures des dépendances
+#   2. tests : standard de codage, traductions, analyse statique, PHPUnit, tests e2e ;
+#      en cas d'échec après une montée de version, adaptation du code par Claude Code
+#      (avec Rector), sinon abandon des montées de version
 #   3. analyse Trivy de l'image et des dépendances ; en cas de vulnérabilité, correction
 #      par Claude Code (montée de version ou exception justifiée dans .trivyignore)
-#   4. publication d'un patch (version, CHANGELOG, tag) si quelque chose a changé
-#   5. attente de la CI, mise à jour du serveur, tests e2e en production, retour à la
-#      version précédente en cas d'échec
+#   4. publication (version, CHANGELOG, tag) si quelque chose a changé : version mineure
+#      si PHP ou une dépendance majeure a changé, correctif sinon
+#   5. attente de la CI, mise à jour du serveur (aussi s'il n'est pas sur la dernière
+#      version), tests e2e en production, retour à la version précédente en cas d'échec
 #
 # Configuration : maintenance/maintenance.env (voir maintenance.env.dist).
 # Journal : maintenance/logs/<date>.log
 #
 set -Eeuo pipefail
 
-ROOT="$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)"
+# le script s'exécute depuis une copie : bash lit le fichier au fur et à mesure, or le
+# dépôt (et ce script lui-même) est modifié pendant l'exécution (git pull, montées de version)
+if [ -z "${MAINTENANCE_ROOT:-}" ]; then
+    MAINTENANCE_ROOT="$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)"
+    copy="$(mktemp)"
+    cp "$0" "$copy"
+    MAINTENANCE_ROOT="$MAINTENANCE_ROOT" MAINTENANCE_COPY="$copy" exec bash "$copy" "$@"
+fi
+ROOT="$MAINTENANCE_ROOT"
 cd "$ROOT"
 
 dry_run=0
@@ -34,7 +46,7 @@ for arg in "$@"; do
         --dry-run) dry_run=1; deploy=0 ;;
         --no-deploy) deploy=0 ;;
         --force-release) force_release=1 ;;
-        -h|--help) sed -n '3,22p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        -h|--help) sed -n '3,27p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         *) echo "Option inconnue : $arg" >&2; exit 1 ;;
     esac
 done
@@ -91,6 +103,8 @@ fail() {
 cleanup() {
     docker rm -f "$E2E_CONTAINER" >/dev/null 2>&1 || true
     [ -z "${ASKPASS:-}" ] || rm -f "$ASKPASS"
+    [ -z "${UPGRADE_STATE:-}" ] || rm -f "$UPGRADE_STATE"
+    [ -z "${MAINTENANCE_COPY:-}" ] || rm -f "$MAINTENANCE_COPY"
 }
 trap cleanup EXIT
 trap 'fail "erreur inattendue à la ligne $LINENO"' ERR
@@ -130,20 +144,37 @@ previous_version="$(current_version)"
 echo "Version actuelle : $previous_version"
 
 # ---------------------------------------------------------------------------
-step "Mise à jour des dépendances"
-composer_output="$(docker run --rm -v "$ROOT:/app" -w /app -u "$(id -u):$(id -g)" \
-    -e COMPOSER_HOME=/tmp/composer composer:2 update --no-interaction --no-progress --no-scripts 2>&1)" \
-    || { echo "$composer_output"; fail "composer update a échoué"; }
-echo "$composer_output"
-# « - Upgrading vendor/paquet (1.0.0 => 1.0.1) » : une ligne de résumé par paquet
+step "Montées de version"
+UPGRADE_STATE="$(mktemp)"
+upgrades=()
+upgrade_output="$(UPGRADE_STATE="$UPGRADE_STATE" GITHUB_TOKEN_FILE="$GITHUB_TOKEN_FILE" \
+    python3 -B maintenance/upgrade.py 2>&1)" || { echo "$upgrade_output"; fail "maintenance/upgrade.py a échoué"; }
+echo "$upgrade_output"
 while read -r line; do
-    summary+=("$line")
-done < <(echo "$composer_output" | sed -n 's/^ *- \(Upgrading\|Installing\|Removing\) \(.*\)$/composer : \1 \2/p')
-npm update --prefix tests/e2e --no-audit --no-fund --silent || fail "npm update a échoué"
-npm ci --prefix tests/e2e --no-audit --no-fund --silent || fail "npm ci a échoué"
-if ! git diff --quiet -- tests/e2e/package-lock.json; then
-    summary+=("dépendances des tests e2e mises à jour")
-fi
+    case "$line" in
+        UPGRADE:*) upgrades+=("${line#UPGRADE: }"); summary+=("${line#UPGRADE: }") ;;
+        WARNING:*) summary+=("attention : ${line#WARNING: }") ;;
+    esac
+done <<< "$upgrade_output"
+
+# ---------------------------------------------------------------------------
+update_dependencies() {
+    step "Mise à jour des dépendances"
+    composer_output="$(docker run --rm -v "$ROOT:/app" -w /app -u "$(id -u):$(id -g)" \
+        -e COMPOSER_HOME=/tmp/composer composer:2 update --no-interaction --no-progress --no-scripts 2>&1)" \
+        || { echo "$composer_output"; fail "composer update a échoué"; }
+    echo "$composer_output"
+    # « - Upgrading vendor/paquet (1.0.0 => 1.0.1) » : une ligne de résumé par paquet
+    while read -r line; do
+        summary+=("$line")
+    done < <(echo "$composer_output" | sed -n 's/^ *- \(Upgrading\|Installing\|Removing\) \(.*\)$/composer : \1 \2/p')
+    npm update --prefix tests/e2e --no-audit --no-fund --silent || fail "npm update a échoué"
+    npm ci --prefix tests/e2e --no-audit --no-fund --silent || fail "npm ci a échoué"
+    if ! git diff --quiet -- tests/e2e/package-lock.json; then
+        summary+=("dépendances des tests e2e mises à jour")
+    fi
+}
+update_dependencies
 
 # ---------------------------------------------------------------------------
 build_and_test() {
@@ -214,8 +245,42 @@ Ne modifie aucun autre fichier, ne commite rien. Termine par un résumé d'une l
 (corrigée ou ignorée, et pourquoi)." || return 1
 }
 
+# adapte le code aux montées de version lorsque les tests échouent
+ai_upgrade() {
+    command -v claude >/dev/null 2>&1 || return 1
+    [ "${AI_FIX:-1}" = "1" ] || return 1
+    step "Adaptation du code aux montées de version par Claude Code"
+    claude -p --permission-mode acceptEdits \
+        --allowedTools "Read,Edit,Write,Glob,Grep,Bash(docker build:*),Bash(docker run --rm:*),Bash(git diff:*),Bash(git status:*)" \
+        "Tu interviens sur le projet Secret Share (${ROOT}) lors de sa maintenance mensuelle automatisée.
+Les montées de version suivantes viennent d'être appliquées et les tests échouent désormais :
+
+$(printf -- '- %s\n' "${upgrades[@]}")
+
+Adapte le code, les tests et la configuration pour que tout fonctionne avec ces nouvelles versions,
+sans revenir sur les montées de version. Pour une montée de version de PHP, Rector est disponible :
+« docker run --rm -v ${ROOT}:/app -w /app -u $(id -u):$(id -g) php:<version>-cli php vendor/bin/rector process ».
+Vérifie ton travail avec « docker build --target test -t secret-share:ai ${ROOT} && docker run --rm secret-share:ai »
+(standard de codage, traductions, analyse statique, PHPUnit). Respecte le style du projet : PSR-12,
+commentaires en français, identifiants en anglais. Ne commite rien. Termine par un résumé des changements." || return 1
+}
+
 # ---------------------------------------------------------------------------
-build_and_test || fail "les tests ont échoué après la mise à jour des dépendances"
+if ! build_and_test; then
+    [ ${#upgrades[@]} -gt 0 ] || fail "les tests ont échoué après la mise à jour des dépendances"
+    if ai_upgrade && build_and_test; then
+        summary+=("code adapté aux montées de version par Claude Code (voir le journal)")
+    else
+        step "Abandon des montées de version"
+        git checkout -- .
+        : > "$UPGRADE_STATE"
+        summary+=("montées de version abandonnées (tests en échec), à traiter à la main : $(IFS=';'; echo "${upgrades[*]}")")
+        # les images de base restent figées sur leur dernière version
+        python3 -B maintenance/upgrade.py --pin-only || fail "impossible de figer les images de base"
+        update_dependencies
+        build_and_test || fail "les tests ont échoué après la mise à jour des dépendances"
+    fi
+fi
 
 report="$(mktemp)"
 if ! trivy_scan "$report"; then
@@ -239,10 +304,10 @@ if [ -n "$system_changes" ]; then
 fi
 git_changes="$(git status --porcelain --untracked-files=no)"
 
+release=1
 if [ -z "$git_changes" ] && [ -z "$system_changes" ] && [ "$force_release" -eq 0 ]; then
+    release=0
     summary+=("aucun changement : rien à publier")
-    notify "terminée"
-    exit 0
 fi
 
 if [ "$dry_run" -eq 1 ]; then
@@ -254,16 +319,25 @@ fi
 
 # ---------------------------------------------------------------------------
 IFS=. read -r major minor patch <<< "$previous_version"
-version="${major}.${minor}.$((patch + 1))"
-step "Publication de la version $version"
-sed -i "s/public const string VERSION = '${previous_version}';/public const string VERSION = '${version}';/" src/App.php
+if [ "$release" -eq 0 ]; then
+    version="$previous_version"
+elif grep -qx minor "$UPGRADE_STATE"; then
+    version="${major}.$((minor + 1)).0"
+else
+    version="${major}.${minor}.$((patch + 1))"
+fi
 
-maintenance_notes="### Maintenance"$'\n\n'
-for line in "${summary[@]}"; do
-    maintenance_notes+="- ${line}"$'\n'
-done
-# une section « [Non publié] » (changements commités à la main) devient celle de la version
-python3 - "${version}" "$(date +%F)" "$maintenance_notes" <<'PY'
+# commit, tag et attente de la CI qui publie l'image
+publish_release() {
+    step "Publication de la version $version"
+    sed -i "s/public const string VERSION = '${previous_version}';/public const string VERSION = '${version}';/" src/App.php
+
+    maintenance_notes="### Maintenance"$'\n\n'
+    for line in "${summary[@]}"; do
+        maintenance_notes+="- ${line}"$'\n'
+    done
+    # une section « [Non publié] » (changements commités à la main) devient celle de la version
+    python3 - "${version}" "$(date +%F)" "$maintenance_notes" <<'PY'
 import sys
 version, day, notes = sys.argv[1:]
 path = 'CHANGELOG.md'
@@ -281,26 +355,31 @@ else:
 open(path, 'w', encoding='utf-8').write(text)
 PY
 
-git add -u
-git commit -q -m "Maintenance mensuelle : version ${version}" -m "$(printf -- '- %s\n' "${summary[@]}")"
-git tag -a "v${version}" -m "Secret Share ${version}"
-git_remote push -q origin main "v${version}"
+    git add -u
+    git commit -q -m "Maintenance mensuelle : version ${version}" -m "$(printf -- '- %s\n' "${summary[@]}")"
+    git tag -a "v${version}" -m "Secret Share ${version}"
+    git_remote push -q origin main "v${version}"
 
-step "Attente de la CI du tag v${version}"
-conclusion=""
-for _ in $(seq 1 90); do
-    run="$(github_api "actions/runs?per_page=10" | python3 -c "
-import json, sys
-runs = [r for r in json.load(sys.stdin)['workflow_runs'] if r['head_branch'] == 'v${version}']
-print(f\"{runs[0]['status']} {runs[0]['conclusion']}\" if runs else 'absent')")"
-    case "$run" in
-        "completed success") conclusion=success; break ;;
-        completed*) conclusion="${run#completed }"; break ;;
-    esac
-    sleep 30
-done
-[ "$conclusion" = "success" ] || fail "la CI du tag v${version} n'a pas réussi (${conclusion:-délai dépassé})"
-summary+=("version ${version} publiée sur Docker Hub")
+    step "Attente de la CI du tag v${version}"
+    conclusion=""
+    for _ in $(seq 1 90); do
+        run="$(github_api "actions/runs?per_page=10" | python3 -c "
+    import json, sys
+    runs = [r for r in json.load(sys.stdin)['workflow_runs'] if r['head_branch'] == 'v${version}']
+    print(f\"{runs[0]['status']} {runs[0]['conclusion']}\" if runs else 'absent')")"
+        case "$run" in
+            "completed success") conclusion=success; break ;;
+            completed*) conclusion="${run#completed }"; break ;;
+        esac
+        sleep 30
+    done
+    [ "$conclusion" = "success" ] || fail "la CI du tag v${version} n'a pas réussi (${conclusion:-délai dépassé})"
+    summary+=("version ${version} publiée sur Docker Hub")
+}
+
+if [ "$release" -eq 1 ]; then
+    publish_release
+fi
 
 # ---------------------------------------------------------------------------
 if [ "$deploy" -eq 0 ] || [ -z "${DEPLOY_HOST:-}" ]; then
@@ -308,11 +387,17 @@ if [ "$deploy" -eq 0 ] || [ -z "${DEPLOY_HOST:-}" ]; then
     exit 0
 fi
 
-step "Mise à jour du serveur ${DEPLOY_HOST}"
 remote() {
     ssh -o BatchMode=yes "$DEPLOY_HOST" "cd '${DEPLOY_PATH}' && $1"
 }
 previous_image="$(remote "sed -n 's/^IMAGE=//p' .env")"
+# sans nouvelle version, le serveur n'est mis à jour que s'il n'est pas sur la dernière
+if [ "$release" -eq 0 ] && [ "$previous_image" = "${DOCKER_IMAGE}:${version}" ]; then
+    summary+=("serveur ${DEPLOY_HOST} déjà en ${version}")
+    notify "terminée"
+    exit 0
+fi
+step "Mise à jour du serveur ${DEPLOY_HOST}"
 deploy_image() {
     remote "git pull -q --ff-only && sed -i 's#^IMAGE=.*#IMAGE=$1#' .env && docker compose pull -q \
         && docker compose up -d --no-build && for i in \$(seq 1 30); do \
@@ -332,7 +417,10 @@ server_digest="$(remote "docker image inspect ${DOCKER_IMAGE}:${version} --forma
 
 if [ -n "${PUBLIC_URL:-}" ]; then
     step "Tests fonctionnels en production"
-    E2E_BASE_URL="$PUBLIC_URL" node tests/e2e/e2e.js || rollback "les tests fonctionnels en production ont échoué"
+    # second essai avant de revenir en arrière : une coupure réseau passagère suffit à faire échouer un test
+    E2E_BASE_URL="$PUBLIC_URL" node tests/e2e/e2e.js \
+        || { echo "Échec des tests en production, nouvel essai dans 60 s"; sleep 60; E2E_BASE_URL="$PUBLIC_URL" node tests/e2e/e2e.js; } \
+        || rollback "les tests fonctionnels en production ont échoué"
 fi
 remote "docker image prune -f >/dev/null"
 summary+=("serveur ${DEPLOY_HOST} mis à jour en ${version}")

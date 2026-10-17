@@ -59,7 +59,7 @@ use Throwable;
  */
 final readonly class App
 {
-    public const string VERSION = '1.3.0';
+    public const string VERSION = '1.4.0';
     public const string SHARE_PATH = '/s';
     public const string REVOKE_PATH = '/r';
     public const string LANGUAGE_COOKIE = 'lang';

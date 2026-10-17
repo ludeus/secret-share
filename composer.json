@@ -43,6 +43,7 @@
     },
     "scripts": {
         "test": "phpunit",
+        "coverage": "XDEBUG_MODE=coverage phpunit --coverage-text",
         "cs-check": "phpcs",
         "cs-fix": "phpcbf",
         "stan": "phpstan analyse --memory-limit=512M",
@@ -56,6 +57,7 @@
     },
     "scripts-descriptions": {
         "test": "Lance les tests unitaires et fonctionnels",
+        "coverage": "Couverture du code (pcov ou Xdebug requis)",
         "cs-check": "Vérifie le standard de codage",
         "cs-fix": "Corrige automatiquement le standard de codage",
         "stan": "Analyse statique",

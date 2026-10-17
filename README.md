@@ -1,5 +1,10 @@
 # Secret Share
 
+[![CI](https://github.com/ludeus/secret-share/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ludeus/secret-share/actions/workflows/ci.yml)
+[![Couverture](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fludeus%2Fsecret-share%2Fbadges%2Fcoverage.json)](https://github.com/ludeus/secret-share/actions/workflows/ci.yml)
+[![Standard de codage](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fludeus%2Fsecret-share%2Fbadges%2Fcs.json)](https://github.com/ludeus/secret-share/actions/workflows/ci.yml)
+[![Sécurité](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fludeus%2Fsecret-share%2Fbadges%2Fsecurity.json)](https://github.com/ludeus/secret-share/actions/workflows/ci.yml)
+
 Partagez un mot de passe, une clé d'API ou toute information sensible au moyen d'un
 **lien éphémère et chiffré**, accompagné d'un **QR code**.
 
@@ -269,6 +274,7 @@ Prérequis : PHP 8.3+ avec les extensions `sodium` et `pdo_sqlite`, Composer.
 ```bash
 composer install
 composer test        # tests unitaires et fonctionnels (PHPUnit)
+composer coverage    # couverture du code (pcov ou Xdebug requis)
 composer cs-check    # standard de codage (PSR-12)
 composer cs-fix      # correction automatique du standard
 composer stan        # analyse statique (PHPStan, niveau max)

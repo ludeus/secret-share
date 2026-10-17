@@ -53,10 +53,64 @@ jobs:
           trivyignores: .trivyignore
           exit-code: '1'
 
+  # mesures publiées dans les badges du README ; ce job ne bloque jamais la CI
+  report:
+    name: Couverture et rapports
+    runs-on: ubuntu-latest
+    outputs:
+      coverage: ${{ steps.coverage.outputs.percent }}
+      cs: ${{ steps.cs.outcome }}
+      audit: ${{ steps.audit.outcome }}
+      trivy: ${{ steps.trivy.outcome }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: sodium, pdo_sqlite
+          coverage: pcov
+
+      - name: Dépendances
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Couverture du code
+        id: coverage
+        continue-on-error: true
+        run: |
+          vendor/bin/phpunit --coverage-clover clover.xml --coverage-text
+          # shellcheck disable=SC2016 # code PHP volontairement entre apostrophes
+          php -r '$m = simplexml_load_file("clover.xml")->project->metrics;
+            printf("percent=%.1f\n", 100 * (int)$m["coveredstatements"] / max(1, (int)$m["statements"]));' >> "$GITHUB_OUTPUT"
+
+      - name: Standard de codage
+        id: cs
+        continue-on-error: true
+        run: composer cs-check
+
+      - name: Audit des dépendances
+        id: audit
+        continue-on-error: true
+        run: composer audit
+
+      - name: Vulnérabilités (Trivy)
+        id: trivy
+        continue-on-error: true
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          trivyignores: .trivyignore
+          exit-code: '1'
+
   docker:
     name: Image Docker
     runs-on: ubuntu-latest
     needs: quality
+    outputs:
+      trivy: ${{ steps.trivy_image.outcome }}
     steps:
       - uses: actions/checkout@v4
 
@@ -74,7 +128,7 @@ jobs:
             -e APP_SECRET="$(openssl rand -base64 48)" -e APP_URL=http://localhost:8080 \
             --read-only --tmpfs /tmp --tmpfs /var/run/apache2:uid=33,gid=33 \
             --tmpfs /var/lock/apache2:uid=33,gid=33 --cap-drop ALL secret-share:ci
-          for i in $(seq 1 20); do curl -fsS http://localhost:8080/health && break; sleep 1; done
+          for _ in $(seq 1 20); do curl -fsS http://localhost:8080/health && break; sleep 1; done
           curl -fsS http://localhost:8080/ | grep -q 'name="secret"'
           docker rm -f smoke
 
@@ -88,12 +142,13 @@ jobs:
             -e APP_SECRET="$(openssl rand -base64 48)" -e APP_URL=http://127.0.0.1:8081 \
             -e RATE_LIMIT_CREATE_PER_MINUTE=0 -e RATE_LIMIT_CREATE_PER_HOUR=0 -e RATE_LIMIT_READ_PER_MINUTE=0 \
             secret-share:ci
-          for i in $(seq 1 20); do curl -fsS http://127.0.0.1:8081/health && break; sleep 1; done
+          for _ in $(seq 1 20); do curl -fsS http://127.0.0.1:8081/health && break; sleep 1; done
           npm ci --prefix tests/e2e --no-audit --no-fund
           E2E_BASE_URL=http://127.0.0.1:8081 E2E_RATE_LIMIT_PAUSE=0 node tests/e2e/e2e.js
           docker rm -f e2e
 
       - name: Analyse de vulnérabilités (Trivy)
+        id: trivy_image
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: secret-share:ci
@@ -137,3 +192,54 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+  # badges du README : fichiers JSON pour shields.io, publiés sur la branche « badges »
+  badges:
+    name: Badges
+    runs-on: ubuntu-latest
+    needs: [report, docker]
+    if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+    steps:
+      - name: Publication des badges
+        env:
+          COVERAGE: ${{ needs.report.outputs.coverage }}
+          CS: ${{ needs.report.outputs.cs }}
+          AUDIT: ${{ needs.report.outputs.audit }}
+          TRIVY_FS: ${{ needs.report.outputs.trivy }}
+          TRIVY_IMAGE: ${{ needs.docker.outputs.trivy }}
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          badge() {
+            printf '{"schemaVersion":1,"label":"%s","message":"%s","color":"%s"}\n' "$2" "$3" "$4" > "$1.json"
+          }
+          mkdir badges && cd badges
+
+          if [ -z "$COVERAGE" ]; then
+            badge coverage couverture inconnue lightgrey
+          else
+            color=$(awk -v c="$COVERAGE" 'BEGIN { print (c >= 90) ? "brightgreen" : (c >= 75) ? "yellowgreen" : (c >= 60) ? "orange" : "red" }')
+            badge coverage couverture "${COVERAGE} %" "$color"
+          fi
+
+          case "$CS" in
+            success) badge cs "standard de codage" "PSR-12" brightgreen ;;
+            failure) badge cs "standard de codage" "erreurs" red ;;
+            *) badge cs "standard de codage" inconnu lightgrey ;;
+          esac
+
+          # sécurité : audit Composer et Trivy (sources et image), vulnérabilités HIGH/CRITICAL corrigeables
+          if [ "$AUDIT" = success ] && [ "$TRIVY_FS" = success ] && [ "$TRIVY_IMAGE" = success ]; then
+            badge security "sécurité" "aucune vulnérabilité" brightgreen
+          elif [ "$AUDIT" = failure ] || [ "$TRIVY_FS" = failure ] || [ "$TRIVY_IMAGE" = failure ]; then
+            badge security "sécurité" "vulnérabilités" red
+          else
+            badge security "sécurité" inconnu lightgrey
+          fi
+
+          git init -q -b badges
+          git -c user.name=github-actions -c user.email=github-actions@users.noreply.github.com add .
+          git -c user.name=github-actions -c user.email=github-actions@users.noreply.github.com commit -q -m "Badges"
+          git push -q -f "https://x-access-token:${TOKEN}@github.com/${REPOSITORY}.git" badges

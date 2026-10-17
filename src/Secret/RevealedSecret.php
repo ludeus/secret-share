@@ -10,13 +10,15 @@ declare(strict_types=1);
 
 namespace SecretShare\Secret;
 
+use SensitiveParameter;
+
 /**
  * Secret déchiffré
  */
 final readonly class RevealedSecret
 {
     public function __construct(
-        #[\SensitiveParameter]
+        #[SensitiveParameter]
         public string $secret,
         public bool $destroyed,
         public ?int $expiresAt,

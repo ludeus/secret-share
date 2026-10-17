@@ -10,6 +10,7 @@ declare(strict_types=1);
 
 namespace SecretShare\Secret;
 
+use Random\RandomException;
 use RuntimeException;
 use SecretShare\Clock;
 use SecretShare\Config;
@@ -22,6 +23,8 @@ use SecretShare\Crypto\Random;
 use SecretShare\Crypto\WrongPasswordException;
 use SecretShare\Storage\SecretRecord;
 use SecretShare\Storage\SecretRepository;
+use SensitiveParameter;
+use SodiumException;
 
 /**
  * Création, lecture et révocation des secrets.
@@ -58,6 +61,8 @@ final readonly class SecretService
 
     /**
      * @throws QuotaExceededException si un quota de stockage est atteint
+     * @throws RandomException
+     * @throws SodiumException
      */
     public function create(ShareRequest $request): CreatedSecret
     {
@@ -118,8 +123,9 @@ final readonly class SecretService
      * @throws SecretNotFoundException
      * @throws PasswordRequiredException
      * @throws InvalidPasswordException
+     * @throws SodiumException
      */
-    public function reveal(string $token, #[\SensitiveParameter] ?string $password): RevealedSecret
+    public function reveal(string $token, #[SensitiveParameter] ?string $password): RevealedSecret
     {
         [$publicId, $lookupHash, $blob] = $this->parseToken($token);
 
@@ -187,6 +193,9 @@ final readonly class SecretService
         );
     }
 
+    /**
+     * @throws SodiumException
+     */
     private function encodeJwt(string $jti, string $blob, ?int $expiresAt): string
     {
         $claims = [

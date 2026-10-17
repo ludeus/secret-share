@@ -12,6 +12,7 @@ namespace SecretShare;
 
 use SecretShare\Http\ClientIp;
 use SecretShare\View\LanguageCatalog;
+use SensitiveParameter;
 
 /**
  * Configuration de l'application, construite et validée à partir des
@@ -26,7 +27,7 @@ final readonly class Config
     public const string DEFAULT_SOURCE_URL = 'https://github.com/ludeus/secret-share';
 
     public function __construct(
-        #[\SensitiveParameter]
+        #[SensitiveParameter]
         public string $appSecret,
         public string $appUrl,
         public int $shortCodeLength = 10,

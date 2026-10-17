@@ -10,6 +10,7 @@ declare(strict_types=1);
 
 namespace SecretShare\Crypto;
 
+use Closure;
 use RuntimeException;
 
 /**
@@ -36,11 +37,11 @@ final readonly class Semaphore
      * Exécute $operation dès qu'un emplacement est libre
      *
      * @template T
-     * @param \Closure(): T $operation
+     * @param Closure(): T $operation
      * @return T
      * @throws RuntimeException si aucun emplacement ne se libère à temps
      */
-    public function run(\Closure $operation): mixed
+    public function run(Closure $operation): mixed
     {
         $deadline = hrtime(true) + $this->timeoutMs * 1_000_000;
         do {

@@ -3,12 +3,14 @@
 /**
  * Ouverture d'un secret : le jeton est lu dans le fragment de l'URL par le JavaScript
  *
- * @var \SecretShare\View\View $this
+ * @var View $this
  * @var string                 $csrfToken
  * @var string                 $token
  * @var bool|null              $passwordRequired
  * @var int|null               $remainingAttempts
  */
+
+use SecretShare\View\View;
 
 $passwordRequired ??= false;
 $remainingAttempts ??= null;
@@ -42,7 +44,10 @@ $remainingAttempts ??= null;
                             aria-pressed="false" title="<?= $this->t('action.show_password') ?>"
                             data-label-show="<?= $this->t('action.show_password') ?>"
                             data-label-hide="<?= $this->t('action.hide_password') ?>">
-                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                            <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                        </svg>
                         <span class="visually-hidden"><?= $this->t('action.show_password') ?></span>
                     </button>
                 </div>

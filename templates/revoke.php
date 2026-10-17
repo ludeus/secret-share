@@ -3,9 +3,11 @@
 /**
  * Confirmation de la destruction d'un secret
  *
- * @var \SecretShare\View\View $this
+ * @var View $this
  * @var string                 $csrfToken
  */
+
+use SecretShare\View\View;
 
 ?>
 <section class="card">

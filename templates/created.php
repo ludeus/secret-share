@@ -3,12 +3,15 @@
 /**
  * Résultat de la création : lien, QR code et lien de révocation
  *
- * @var \SecretShare\View\View          $this
+ * @var View          $this
  * @var string                          $shareUrl
  * @var string                          $revokeUrl
  * @var string|null                     $qrCode
- * @var \SecretShare\Secret\CreatedSecret $created
+ * @var CreatedSecret $created
  */
+
+use SecretShare\Secret\CreatedSecret;
+use SecretShare\View\View;
 
 ?>
 <section class="card">

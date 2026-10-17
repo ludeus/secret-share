@@ -11,6 +11,7 @@ declare(strict_types=1);
 namespace SecretShare\Storage;
 
 use PDO;
+use RuntimeException;
 
 /**
  * Connexion SQLite et création automatique du schéma
@@ -25,7 +26,7 @@ final class Database
         if ($path !== ':memory:') {
             $directory = dirname($path);
             if (!is_dir($directory) && !mkdir($directory, 0700, true) && !is_dir($directory)) {
-                throw new \RuntimeException(sprintf('Impossible de créer le dossier %s', $directory));
+                throw new RuntimeException(sprintf('Impossible de créer le dossier %s', $directory));
             }
             // la base n'est lisible que par l'utilisateur du serveur web
             $previousUmask = umask(0077);

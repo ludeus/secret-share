@@ -12,6 +12,7 @@ namespace SecretShare\Test\Unit\View;
 
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use Random\RandomException;
 use SecretShare\View\LanguageCatalog;
 use SecretShare\View\TranslationChecker;
 
@@ -19,6 +20,9 @@ final class LanguageCatalogTest extends TestCase
 {
     private string $directory;
 
+    /**
+     * @throws RandomException
+     */
     protected function setUp(): void
     {
         $this->directory = sys_get_temp_dir() . '/secret-share-lang-' . bin2hex(random_bytes(4));

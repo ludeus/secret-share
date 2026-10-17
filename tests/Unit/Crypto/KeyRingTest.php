@@ -11,6 +11,7 @@ declare(strict_types=1);
 namespace SecretShare\Test\Unit\Crypto;
 
 use PHPUnit\Framework\TestCase;
+use Random\RandomException;
 use SecretShare\Crypto\KeyRing;
 
 final class KeyRingTest extends TestCase
@@ -38,6 +39,9 @@ final class KeyRingTest extends TestCase
         $this->assertNotSame($keyRing->lookupHash('t', 'id'), $other->lookupHash('t', 'id'));
     }
 
+    /**
+     * @throws RandomException
+     */
     public function testDataKeyCombinesServerKeyPublicIdAndAppSecret(): void
     {
         $keyRing = new KeyRing(str_repeat('a', 32));

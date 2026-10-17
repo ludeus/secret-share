@@ -10,6 +10,8 @@ declare(strict_types=1);
 
 namespace SecretShare\Storage;
 
+use SensitiveParameter;
+
 /**
  * Ligne de la table secrets. Volontairement minimale : aucune date de
  * création, adresse IP ou autre métadonnée n'est conservée.
@@ -18,7 +20,7 @@ final readonly class SecretRecord
 {
     public function __construct(
         public string $lookupHash,
-        #[\SensitiveParameter]
+        #[SensitiveParameter]
         public string $serverKey,
         public ?string $payload,
         public bool $singleUse,

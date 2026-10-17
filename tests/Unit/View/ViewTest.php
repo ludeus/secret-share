@@ -11,8 +11,11 @@ declare(strict_types=1);
 namespace SecretShare\Test\Unit\View;
 
 use PHPUnit\Framework\TestCase;
+use Random\RandomException;
+use RuntimeException;
 use SecretShare\View\Translator;
 use SecretShare\View\View;
+use Throwable;
 
 final class ViewTest extends TestCase
 {
@@ -42,6 +45,9 @@ final class ViewTest extends TestCase
         );
     }
 
+    /**
+     * @throws RandomException
+     */
     public function testAssetUrlContainsModificationTime(): void
     {
         $directory = sys_get_temp_dir() . '/secret-share-assets-' . bin2hex(random_bytes(4));
@@ -59,11 +65,14 @@ final class ViewTest extends TestCase
         }
     }
 
+    /**
+     * @throws Throwable
+     */
     public function testMissingTemplateThrows(): void
     {
         $view = new View('/nonexistent', new Translator('fr', []));
 
-        $this->expectException(\RuntimeException::class);
+        $this->expectException(RuntimeException::class);
         $view->render('missing');
     }
 }

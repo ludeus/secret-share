@@ -3,9 +3,11 @@
 /**
  * Résultat de la destruction d'un secret
  *
- * @var \SecretShare\View\View $this
+ * @var View $this
  * @var bool                   $revoked
  */
+
+use SecretShare\View\View;
 
 ?>
 <section class="card card-centered">

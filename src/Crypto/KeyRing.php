@@ -10,6 +10,8 @@ declare(strict_types=1);
 
 namespace SecretShare\Crypto;
 
+use SensitiveParameter;
+
 /**
  * Dérive, à partir de la clé maître APP_SECRET, des sous-clés indépendantes
  * pour chaque usage (signature JWT, index de recherche, chiffrement…).
@@ -22,7 +24,7 @@ final readonly class KeyRing
     private string $encryptionSalt;
     private string $rateLimitKey;
 
-    public function __construct(#[\SensitiveParameter] string $appSecret)
+    public function __construct(#[SensitiveParameter] string $appSecret)
     {
         $this->jwtKey = hash_hkdf('sha256', $appSecret, 32, 'secret-share/v1/jwt');
         $this->lookupKey = hash_hkdf('sha256', $appSecret, 32, 'secret-share/v1/lookup');
@@ -62,7 +64,7 @@ final readonly class KeyRing
      * et l'identifiant public (lien). Il faut les trois pour déchiffrer, et
      * supprimer la ligne en base rend le secret définitivement illisible.
      */
-    public function dataKey(#[\SensitiveParameter] string $serverKey, string $publicId): string
+    public function dataKey(#[SensitiveParameter] string $serverKey, string $publicId): string
     {
         return hash_hkdf(
             'sha256',

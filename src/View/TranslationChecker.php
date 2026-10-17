@@ -71,7 +71,7 @@ final readonly class TranslationChecker
      */
     private static function placeholders(string $text): array
     {
-        preg_match_all('/\{([a-z_]+)\}/', $text, $matches);
+        preg_match_all('/\{([a-z_]+)}/', $text, $matches);
         $names = array_values(array_unique($matches[1]));
         sort($names);
         return $names;

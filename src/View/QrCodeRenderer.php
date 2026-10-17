@@ -25,6 +25,9 @@ final class QrCodeRenderer
 {
     /**
      * Retourne le QR code en data URI, ou null si le contenu est trop long
+     *
+     * @noinspection PhpRedundantCatchClauseInspection php-qrcode lève QRCodeDataException
+     *               sans la déclarer en @throws
      */
     public function dataUri(string $content): ?string
     {
@@ -41,7 +44,7 @@ final class QrCodeRenderer
             return null;
         }
 
-        $size = $matrix->getSize();
+        $size = $matrix->moduleCount;
         $path = '';
         for ($y = 0; $y < $size; $y++) {
             $x = 0;

@@ -10,7 +10,9 @@ declare(strict_types=1);
 
 namespace SecretShare\Http;
 
+use Random\RandomException;
 use SecretShare\Crypto\Random;
+use SodiumException;
 
 /**
  * Protection CSRF par double soumission (cookie + champ caché), complétée par
@@ -30,6 +32,9 @@ final readonly class Csrf
 
     /**
      * Retourne le jeton à placer dans les formulaires (celui du cookie s'il est valide)
+     *
+     * @throws RandomException
+     * @throws SodiumException
      */
     public function token(Request $request): string
     {

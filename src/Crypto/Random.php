@@ -10,6 +10,9 @@ declare(strict_types=1);
 
 namespace SecretShare\Crypto;
 
+use Random\RandomException;
+use SodiumException;
+
 /**
  * Génération d'identifiants aléatoires et encodage base64url (RFC 4648 §5)
  */
@@ -24,6 +27,8 @@ final class Random
      * Jeton aléatoire encodé en base64url
      *
      * @param positive-int $bytes
+     * @throws RandomException
+     * @throws SodiumException
      */
     public static function token(int $bytes): string
     {
@@ -32,6 +37,8 @@ final class Random
 
     /**
      * Code court aléatoire, tiré uniformément dans SHORT_CODE_ALPHABET
+     *
+     * @throws RandomException
      */
     public static function shortCode(int $length): string
     {
@@ -54,6 +61,9 @@ final class Random
             && strspn($value, self::SHORT_CODE_ALPHABET) === $length;
     }
 
+    /**
+     * @throws SodiumException
+     */
     public static function base64UrlEncode(string $data): string
     {
         return sodium_bin2base64($data, SODIUM_BASE64_VARIANT_URLSAFE_NO_PADDING);
@@ -66,7 +76,7 @@ final class Random
     {
         try {
             return sodium_base642bin($data, SODIUM_BASE64_VARIANT_URLSAFE_NO_PADDING);
-        } catch (\SodiumException) {
+        } catch (SodiumException) {
             throw new DecryptionException('Encodage base64url invalide');
         }
     }

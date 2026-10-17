@@ -3,10 +3,12 @@
 /**
  * Page d'erreur générique
  *
- * @var \SecretShare\View\View $this
+ * @var View $this
  * @var string                 $messageKey
  * @var int                    $status
  */
+
+use SecretShare\View\View;
 
 ?>
 <section class="card card-centered">

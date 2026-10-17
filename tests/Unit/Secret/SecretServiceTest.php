@@ -12,16 +12,18 @@ namespace SecretShare\Test\Unit\Secret;
 
 use PDO;
 use PHPUnit\Framework\TestCase;
+use Random\RandomException;
 use SecretShare\Crypto\PasswordRequiredException;
 use SecretShare\Secret\Duration;
 use SecretShare\Secret\InvalidPasswordException;
+use SecretShare\Secret\QuotaExceededException;
 use SecretShare\Secret\SecretNotFoundException;
 use SecretShare\Secret\SecretService;
 use SecretShare\Secret\ShareRequest;
-use SecretShare\Secret\QuotaExceededException;
 use SecretShare\Storage\SecretRepository;
 use SecretShare\Test\Factory;
 use SecretShare\Test\FrozenClock;
+use SodiumException;
 
 final class SecretServiceTest extends TestCase
 {
@@ -62,6 +64,10 @@ final class SecretServiceTest extends TestCase
         return $statement->fetchAll();
     }
 
+    /**
+     * @throws RandomException
+     * @throws SodiumException
+     */
     public function testJwtSecretCanBeRevealedOnceWhenSingleUse(): void
     {
         $created = $this->service->create(self::request());
@@ -78,6 +84,10 @@ final class SecretServiceTest extends TestCase
         $this->service->reveal($created->token, null);
     }
 
+    /**
+     * @throws RandomException
+     * @throws SodiumException
+     */
     public function testJwtDoesNotContainPlaintextAndServerDoesNotStoreCiphertext(): void
     {
         $created = $this->service->create(self::request('très-secret'));
@@ -86,6 +96,10 @@ final class SecretServiceTest extends TestCase
         $this->assertNull($this->rows()[0]['payload']);
     }
 
+    /**
+     * @throws RandomException
+     * @throws SodiumException
+     */
     public function testMultiUseSecretCanBeRevealedSeveralTimes(): void
     {
         $created = $this->service->create(self::request(singleUse: false));
@@ -97,6 +111,10 @@ final class SecretServiceTest extends TestCase
         $this->assertSame($created->expiresAt, $revealed->expiresAt);
     }
 
+    /**
+     * @throws RandomException
+     * @throws SodiumException
+     */
     public function testExpiredSecretIsNotRevealedAndIsDeleted(): void
     {
         $created = $this->service->create(self::request(duration: Duration::TenMinutes, shortUrl: true));
@@ -110,6 +128,10 @@ final class SecretServiceTest extends TestCase
         }
     }
 
+    /**
+     * @throws RandomException
+     * @throws SodiumException
+     */
     public function testExpiredJwtIsRejected(): void
     {
         $created = $this->service->create(self::request(duration: Duration::TenMinutes));
@@ -119,6 +141,10 @@ final class SecretServiceTest extends TestCase
         $this->service->reveal($created->token, null);
     }
 
+    /**
+     * @throws RandomException
+     * @throws SodiumException
+     */
     public function testUnlimitedSecretHasNoExpiration(): void
     {
         $created = $this->service->create(self::request(duration: Duration::Unlimited, singleUse: false));
@@ -128,6 +154,10 @@ final class SecretServiceTest extends TestCase
         $this->assertSame('mon secret', $this->service->reveal($created->token, null)->secret);
     }
 
+    /**
+     * @throws RandomException
+     * @throws SodiumException
+     */
     public function testShortCodeSecret(): void
     {
         $created = $this->service->create(self::request(shortUrl: true));
@@ -137,6 +167,10 @@ final class SecretServiceTest extends TestCase
         $this->assertSame(0, $this->storedSecrets());
     }
 
+    /**
+     * @throws RandomException
+     * @throws SodiumException
+     */
     public function testShortCodeLengthIsConfigurable(): void
     {
         $service = Factory::service(config: Factory::config(shortCodeLength: 24));
@@ -144,6 +178,10 @@ final class SecretServiceTest extends TestCase
         $this->assertSame(24, strlen($service->create(self::request(shortUrl: true))->token));
     }
 
+    /**
+     * @throws RandomException
+     * @throws SodiumException
+     */
     public function testShortCodeStoresOnlyCiphertext(): void
     {
         $this->service->create(self::request('très-secret', shortUrl: true));
@@ -153,6 +191,10 @@ final class SecretServiceTest extends TestCase
         $this->assertStringNotContainsString('très-secret', $row['payload']);
     }
 
+    /**
+     * @throws RandomException
+     * @throws SodiumException
+     */
     public function testDatabaseDoesNotContainPublicIdentifiers(): void
     {
         $created = $this->service->create(self::request(shortUrl: true));
@@ -164,6 +206,10 @@ final class SecretServiceTest extends TestCase
         $this->assertStringNotContainsString($created->revokeToken, $dump);
     }
 
+    /**
+     * @throws RandomException
+     * @throws SodiumException
+     */
     public function testDeletingServerRowMakesJwtUseless(): void
     {
         $created = $this->service->create(self::request(singleUse: false));
@@ -173,6 +219,10 @@ final class SecretServiceTest extends TestCase
         $this->service->reveal($created->token, null);
     }
 
+    /**
+     * @throws RandomException
+     * @throws SodiumException
+     */
     public function testTokenFromAnotherInstanceIsRejected(): void
     {
         $other = Factory::service(config: Factory::config(appSecret: str_repeat('z', 40)));
@@ -182,6 +232,9 @@ final class SecretServiceTest extends TestCase
         $this->service->reveal($created->token, null);
     }
 
+    /**
+     * @throws SodiumException
+     */
     public function testGarbageTokensAreRejected(): void
     {
         foreach (['', 'a', 'a.b.c', 'not a token', str_repeat('x', 5000), 'abcdefgh'] as $token) {
@@ -194,6 +247,10 @@ final class SecretServiceTest extends TestCase
         }
     }
 
+    /**
+     * @throws RandomException
+     * @throws SodiumException
+     */
     public function testPasswordProtectedSecret(): void
     {
         $created = $this->service->create(self::request(password: 'motdepasse'));
@@ -217,6 +274,10 @@ final class SecretServiceTest extends TestCase
         $this->assertSame(0, $this->storedSecrets());
     }
 
+    /**
+     * @throws RandomException
+     * @throws SodiumException
+     */
     public function testTooManyWrongPasswordsDestroyTheSecret(): void
     {
         $created = $this->service->create(self::request(password: 'motdepasse', shortUrl: true));
@@ -235,9 +296,13 @@ final class SecretServiceTest extends TestCase
         $this->service->reveal($created->token, 'motdepasse');
     }
 
+    /**
+     * @throws RandomException
+     * @throws SodiumException
+     */
     public function testExhaustedAttemptsAreRefusedBeforeCheckingPassword(): void
     {
-        $created = $this->service->create(self::request(password: 'motdepasse', singleUse: false));
+        $created = $this->service->create(self::request(singleUse: false, password: 'motdepasse'));
         // simule des essais concurrents ayant déjà réservé toutes les tentatives
         $this->pdo->exec('UPDATE secrets SET failed_attempts = 3');
 
@@ -250,9 +315,13 @@ final class SecretServiceTest extends TestCase
         $this->assertSame(0, $this->storedSecrets());
     }
 
+    /**
+     * @throws RandomException
+     * @throws SodiumException
+     */
     public function testSuccessfulPasswordReleasesTheReservedAttempt(): void
     {
-        $created = $this->service->create(self::request(password: 'motdepasse', singleUse: false));
+        $created = $this->service->create(self::request(singleUse: false, password: 'motdepasse'));
 
         for ($i = 0; $i < 5; $i++) {
             $this->service->reveal($created->token, 'motdepasse');
@@ -261,6 +330,10 @@ final class SecretServiceTest extends TestCase
         $this->assertSame(0, $this->rows()[0]['failed_attempts']);
     }
 
+    /**
+     * @throws RandomException
+     * @throws SodiumException
+     */
     public function testStorageQuota(): void
     {
         $service = Factory::service(config: Factory::config(maxStoredSecrets: 2));
@@ -275,6 +348,10 @@ final class SecretServiceTest extends TestCase
         }
     }
 
+    /**
+     * @throws RandomException
+     * @throws SodiumException
+     */
     public function testUnlimitedSecretsHaveTheirOwnQuota(): void
     {
         $service = Factory::service(config: Factory::config(maxUnlimitedSecrets: 1));
@@ -290,6 +367,10 @@ final class SecretServiceTest extends TestCase
         $this->assertNotNull($service->create(self::request(duration: Duration::OneDay))->expiresAt);
     }
 
+    /**
+     * @throws RandomException
+     * @throws SodiumException
+     */
     public function testRevoke(): void
     {
         $created = $this->service->create(self::request(singleUse: false));
@@ -303,6 +384,10 @@ final class SecretServiceTest extends TestCase
         $this->service->reveal($created->token, null);
     }
 
+    /**
+     * @throws RandomException
+     * @throws SodiumException
+     */
     public function testLargeUnicodeSecret(): void
     {
         $secret = str_repeat("ligne é 🔐\n", 90);

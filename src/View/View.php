@@ -11,6 +11,7 @@ declare(strict_types=1);
 namespace SecretShare\View;
 
 use RuntimeException;
+use Throwable;
 
 /**
  * Rendu de gabarits PHP natifs avec échappement explicite.
@@ -42,6 +43,7 @@ final readonly class View
 
     /**
      * @param array<string, mixed> $vars
+     * @throws Throwable
      */
     public function render(string $template, array $vars = []): string
     {
@@ -96,6 +98,7 @@ final readonly class View
 
     /**
      * @param array<string, mixed> $vars
+     * @throws Throwable
      */
     private function renderFile(string $template, array $vars): string
     {
@@ -110,7 +113,7 @@ final readonly class View
         ob_start();
         try {
             $render($file, $vars);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             ob_end_clean();
             throw $e;
         }

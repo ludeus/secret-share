@@ -11,11 +11,17 @@ declare(strict_types=1);
 namespace SecretShare\Test\Unit\Crypto;
 
 use PHPUnit\Framework\TestCase;
+use Random\RandomException;
 use SecretShare\Crypto\DecryptionException;
 use SecretShare\Crypto\Random;
+use SodiumException;
 
 final class RandomTest extends TestCase
 {
+    /**
+     * @throws RandomException
+     * @throws SodiumException
+     */
     public function testTokenIsBase64UrlWithoutPadding(): void
     {
         $token = Random::token(32);
@@ -24,6 +30,9 @@ final class RandomTest extends TestCase
         $this->assertNotSame($token, Random::token(32));
     }
 
+    /**
+     * @throws RandomException
+     */
     public function testShortCodeUsesUnambiguousAlphabet(): void
     {
         $code = Random::shortCode(64);
@@ -42,6 +51,10 @@ final class RandomTest extends TestCase
         $this->assertFalse(Random::isShortCode(str_repeat('a', 65), 8, 64));
     }
 
+    /**
+     * @throws RandomException
+     * @throws SodiumException
+     */
     public function testBase64UrlRoundTrip(): void
     {
         $data = random_bytes(100);

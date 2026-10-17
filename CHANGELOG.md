@@ -4,6 +4,13 @@ Toutes les évolutions notables sont consignées ici.
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le projet
 respecte le [versionnage sémantique](https://semver.org/lang/fr/).
 
+## [1.2.2] - 2026-10-17
+
+### Modifications
+
+- Corrections signalées par l'analyse de PhpStorm : imports explicites, annotations `@throws`
+  et types des gabarits.
+
 ## [1.2.1] - 2026-10-17
 
 ### Modifications

@@ -3,19 +3,22 @@
 /**
  * Formulaire de création d'un secret
  *
- * @var \SecretShare\View\View          $this
- * @var string                          $csrfToken
- * @var list<\SecretShare\Secret\Duration> $durations
- * @var int                             $maxSecretLength
- * @var int                             $maxPasswordLength
- * @var array<string, string>           $old
- * @var array<string, string>           $errors
+ * @var View                  $this
+ * @var string                $csrfToken
+ * @var list<Duration>        $durations
+ * @var int                   $maxSecretLength
+ * @var int                   $maxPasswordLength
+ * @var array<string, string> $old
+ * @var array<string, string> $errors
  */
+
+use SecretShare\Secret\Duration;
+use SecretShare\View\View;
 
 $fieldError = function (string $name) use ($errors, $maxSecretLength): string {
     $message = isset($errors[$name]) ? $this->t($errors[$name], ['max' => $maxSecretLength]) : '';
     return sprintf(
-        '<p class="field-error" id="%s-error" data-error-for="%s"%s>%s</p>',
+        '<p class="field-error" id="%s-error" data-error-for="%s" %s>%s</p>',
         $name,
         $name,
         $message === '' ? ' hidden' : '',
@@ -83,7 +86,10 @@ $shortUrlAllowed = $old['single_use'] === '1' || $old['duration'] !== 'none';
                             aria-pressed="false" title="<?= $this->t('action.show_password') ?>"
                             data-label-show="<?= $this->t('action.show_password') ?>"
                             data-label-hide="<?= $this->t('action.hide_password') ?>">
-                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                            <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                        </svg>
                         <span class="visually-hidden"><?= $this->t('action.show_password') ?></span>
                     </button>
                 </div>

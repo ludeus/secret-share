@@ -3,7 +3,7 @@
 /**
  * Gabarit principal
  *
- * @var \SecretShare\View\View $this
+ * @var View $this
  * @var string                  $content
  * @var string                  $sourceUrl
  * @var string                  $version
@@ -11,6 +11,8 @@
  * @var bool                    $showLanguageSelector
  * @var string                  $currentPath
  */
+
+use SecretShare\View\View;
 
 ?>
 <!doctype html>
@@ -34,7 +36,8 @@
     <header class="site-header">
         <a class="brand" href="/">
             <svg class="brand-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                <path d="M7 10V7a5 5 0 0 1 10 0v3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <path d="M7 10V7a5 5 0 0 1 10 0v3" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round"/>
                 <rect x="4" y="10" width="16" height="11" rx="2.5" fill="currentColor"/>
                 <circle cx="12" cy="15.5" r="1.6" class="brand-icon-hole"/>
             </svg>

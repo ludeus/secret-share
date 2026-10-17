@@ -10,6 +10,11 @@ declare(strict_types=1);
 
 namespace SecretShare\Crypto;
 
+use Closure;
+use Random\RandomException;
+use SensitiveParameter;
+use SodiumException;
+
 /**
  * Chiffrement d'un secret en une ou deux couches :
  *
@@ -38,11 +43,13 @@ final readonly class Envelope
      *
      * @param string $context données associées authentifiées (empêche de
      *                        déplacer un chiffré d'un secret vers un autre)
+     * @throws RandomException
+     * @throws SodiumException
      */
     public function seal(
-        #[\SensitiveParameter] string $secret,
-        #[\SensitiveParameter] ?string $password,
-        #[\SensitiveParameter] string $key,
+        #[SensitiveParameter] string $secret,
+        #[SensitiveParameter] ?string $password,
+        #[SensitiveParameter] string $key,
         string $context
     ): string {
         $content = sodium_pad($secret, self::PAD_BLOCK_SIZE);
@@ -59,18 +66,19 @@ final readonly class Envelope
     /**
      * Déchiffre un secret produit par seal()
      *
-     * @param (\Closure(): void)|null $beforePasswordCheck appelé juste avant de tester
+     * @param (Closure(): void)|null $beforePasswordCheck appelé juste avant de tester
      *        le mot de passe ; peut lever une exception pour refuser l'essai
      * @throws DecryptionException   chiffré invalide ou clé erronée
      * @throws PasswordRequiredException
      * @throws WrongPasswordException
+     * @throws SodiumException
      */
     public function open(
         string $blob,
-        #[\SensitiveParameter] ?string $password,
-        #[\SensitiveParameter] string $key,
+        #[SensitiveParameter] ?string $password,
+        #[SensitiveParameter] string $key,
         string $context,
-        ?\Closure $beforePasswordCheck = null
+        ?Closure $beforePasswordCheck = null
     ): string {
         $content = $this->decrypt($blob, $key, $context);
         $flag = substr($content, 0, 1);
@@ -99,21 +107,28 @@ final readonly class Envelope
 
         try {
             return sodium_unpad($content, self::PAD_BLOCK_SIZE);
-        } catch (\SodiumException) {
+        } catch (SodiumException) {
             throw new DecryptionException('Remplissage invalide');
         }
     }
 
     /**
      * Chiffrement authentifié : nonce (24 octets) || chiffré || tag
+     *
+     * @throws RandomException
+     * @throws SodiumException
      */
-    private function encrypt(string $plain, #[\SensitiveParameter] string $key, string $context): string
+    private function encrypt(string $plain, #[SensitiveParameter] string $key, string $context): string
     {
         $nonce = random_bytes(SODIUM_CRYPTO_AEAD_XCHACHA20POLY1305_IETF_NPUBBYTES);
         return $nonce . sodium_crypto_aead_xchacha20poly1305_ietf_encrypt($plain, $context, $nonce, $key);
     }
 
-    private function decrypt(string $blob, #[\SensitiveParameter] string $key, string $context): string
+    /**
+     * @throws DecryptionException
+     * @throws SodiumException
+     */
+    private function decrypt(string $blob, #[SensitiveParameter] string $key, string $context): string
     {
         $nonceLength = SODIUM_CRYPTO_AEAD_XCHACHA20POLY1305_IETF_NPUBBYTES;
         if (strlen($blob) < $nonceLength + SODIUM_CRYPTO_AEAD_XCHACHA20POLY1305_IETF_ABYTES) {
@@ -135,8 +150,11 @@ final readonly class Envelope
      * Dérive une clé du mot de passe avec Argon2id (résistant au brute-force GPU).
      * Le sémaphore borne le nombre de dérivations simultanées : chacune alloue
      * 64 Mio hors du memory_limit de PHP.
+     *
+     * @throws DecryptionException
+     * @throws SodiumException
      */
-    private function passwordKey(#[\SensitiveParameter] string $password, string $salt): string
+    private function passwordKey(#[SensitiveParameter] string $password, string $salt): string
     {
         if (strlen($salt) !== SODIUM_CRYPTO_PWHASH_SALTBYTES) {
             throw new DecryptionException('Sel invalide');

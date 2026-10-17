@@ -37,6 +37,7 @@ use SecretShare\View\QrCodeRenderer;
 use SecretShare\View\LanguageCatalog;
 use SecretShare\View\Translator;
 use SecretShare\View\View;
+use Throwable;
 
 /**
  * Point d'entrée HTTP : routage et contrôleurs.
@@ -58,7 +59,7 @@ use SecretShare\View\View;
  */
 final readonly class App
 {
-    public const string VERSION = '1.2.1';
+    public const string VERSION = '1.2.2';
     public const string SHARE_PATH = '/s';
     public const string REVOKE_PATH = '/r';
     public const string LANGUAGE_COOKIE = 'lang';
@@ -119,6 +120,9 @@ final readonly class App
         );
     }
 
+    /**
+     * @throws Throwable
+     */
     public function handle(Request $request): Response
     {
         if ($request->path === '/health') {
@@ -235,6 +239,7 @@ final readonly class App
     /**
      * @param array<string, string> $old    valeurs saisies à réafficher
      * @param array<string, string> $errors erreurs de validation par champ
+     * @throws Throwable
      */
     private function home(
         View $view,
@@ -264,6 +269,9 @@ final readonly class App
         );
     }
 
+    /**
+     * @throws Throwable
+     */
     private function createSecret(View $view, Request $request, string $csrfToken): Response
     {
         try {
@@ -298,11 +306,17 @@ final readonly class App
         );
     }
 
+    /**
+     * @throws Throwable
+     */
     private function revealForm(View $view, string $csrfToken): Response
     {
         return new Response($view->render('reveal', ['csrfToken' => $csrfToken, 'token' => '']));
     }
 
+    /**
+     * @throws Throwable
+     */
     private function reveal(View $view, Request $request, string $csrfToken): Response
     {
         $token = $request->postString('token');
@@ -329,11 +343,17 @@ final readonly class App
         return new Response($view->render('revealed', ['revealed' => $revealed]));
     }
 
+    /**
+     * @throws Throwable
+     */
     private function revokeForm(View $view, string $csrfToken): Response
     {
         return new Response($view->render('revoke', ['csrfToken' => $csrfToken]));
     }
 
+    /**
+     * @throws Throwable
+     */
     private function revoke(View $view, Request $request, string $csrfToken): Response
     {
         $revoked = $this->secrets->revoke($request->postString('token'));
@@ -343,6 +363,9 @@ final readonly class App
         );
     }
 
+    /**
+     * @throws Throwable
+     */
     private function error(View $view, string $messageKey, int $status, string $csrfToken): Response
     {
         return new Response(

@@ -10,6 +10,8 @@ declare(strict_types=1);
 
 namespace SecretShare\Secret;
 
+use SensitiveParameter;
+
 /**
  * Demande de création d'un secret, validée.
  * Les mêmes règles sont vérifiées côté navigateur (public/assets/app.js).
@@ -19,11 +21,11 @@ final readonly class ShareRequest
     public const int MAX_PASSWORD_LENGTH = 1024;
 
     public function __construct(
-        #[\SensitiveParameter]
+        #[SensitiveParameter]
         public string $secret,
         public Duration $duration,
         public bool $singleUse,
-        #[\SensitiveParameter]
+        #[SensitiveParameter]
         public ?string $password,
         public bool $shortUrl,
     ) {

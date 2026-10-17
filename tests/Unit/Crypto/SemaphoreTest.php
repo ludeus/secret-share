@@ -11,6 +11,7 @@ declare(strict_types=1);
 namespace SecretShare\Test\Unit\Crypto;
 
 use PHPUnit\Framework\TestCase;
+use Random\RandomException;
 use RuntimeException;
 use SecretShare\Crypto\Semaphore;
 
@@ -18,6 +19,9 @@ final class SemaphoreTest extends TestCase
 {
     private string $directory;
 
+    /**
+     * @throws RandomException
+     */
     protected function setUp(): void
     {
         $this->directory = sys_get_temp_dir() . '/secret-share-sem-' . bin2hex(random_bytes(4));

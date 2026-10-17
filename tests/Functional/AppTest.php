@@ -16,6 +16,7 @@ use SecretShare\Http\Request;
 use SecretShare\Http\Response;
 use SecretShare\Test\Factory;
 use SecretShare\Test\FrozenClock;
+use Throwable;
 
 /**
  * Parcours complets à travers le routeur, les contrôleurs et les gabarits
@@ -33,6 +34,9 @@ final class AppTest extends TestCase
         $this->app = App::create(Factory::config(), Factory::pdo(), $this->clock, Factory::envelope());
     }
 
+    /**
+     * @throws Throwable
+     */
     private function get(string $path, string $language = 'fr'): Response
     {
         return $this->app->handle(new Request('GET', $path, headers: ['accept-language' => $language]));
@@ -40,6 +44,7 @@ final class AppTest extends TestCase
 
     /**
      * @param array<string, string> $data
+     * @throws Throwable
      */
     private function post(string $path, array $data): Response
     {
@@ -70,6 +75,7 @@ final class AppTest extends TestCase
      * Crée un secret via le formulaire et retourne le jeton du lien de partage
      *
      * @param array<string, string> $data
+     * @throws Throwable
      */
     private function createSecret(array $data = []): string
     {
@@ -78,6 +84,9 @@ final class AppTest extends TestCase
         return $this->fragment($response, 'share-url');
     }
 
+    /**
+     * @throws Throwable
+     */
     public function testHomePage(): void
     {
         $response = $this->get('/');
@@ -93,11 +102,17 @@ final class AppTest extends TestCase
         $this->assertCount(1, $response->cookies);
     }
 
+    /**
+     * @throws Throwable
+     */
     public function testHomePageInEnglish(): void
     {
         $this->assertStringContainsString('<html lang="en" dir="ltr">', $this->get('/', 'en-GB,en')->body);
     }
 
+    /**
+     * @throws Throwable
+     */
     public function testLanguageSelectorAndDetection(): void
     {
         $response = $this->get('/', 'es-ES,es;q=0.9');
@@ -113,6 +128,9 @@ final class AppTest extends TestCase
         $this->assertMatchesRegularExpression('#href="/assets/app\.css\?v=\d+"#', $response->body);
     }
 
+    /**
+     * @throws Throwable
+     */
     public function testLanguageChosenInUrlIsRemembered(): void
     {
         $response = $this->app->handle(new Request('GET', '/', query: ['lang' => 'ar']));
@@ -127,6 +145,9 @@ final class AppTest extends TestCase
         $this->assertStringContainsString('<html lang="de" dir="ltr">', $remembered->body);
     }
 
+    /**
+     * @throws Throwable
+     */
     public function testUnknownLanguageIsIgnored(): void
     {
         $response = $this->app->handle(
@@ -143,6 +164,9 @@ final class AppTest extends TestCase
         $this->assertSame([], array_filter($response->cookies, fn (string $c): bool => str_starts_with($c, 'lang=')));
     }
 
+    /**
+     * @throws Throwable
+     */
     public function testNoLanguageSelectorOnResultPages(): void
     {
         $response = $this->post('/', ['secret' => 'x', 'duration' => '1h', 'single_use' => '1']);
@@ -152,6 +176,9 @@ final class AppTest extends TestCase
         $this->assertStringContainsString('data-lang-switch', $this->get('/')->body);
     }
 
+    /**
+     * @throws Throwable
+     */
     public function testHealth(): void
     {
         $response = $this->get('/health');
@@ -160,11 +187,17 @@ final class AppTest extends TestCase
         $this->assertSame('OK', $response->body);
     }
 
+    /**
+     * @throws Throwable
+     */
     public function testUnknownRoute(): void
     {
         $this->assertSame(404, $this->get('/admin')->status);
     }
 
+    /**
+     * @throws Throwable
+     */
     public function testPostWithoutCsrfIsRejected(): void
     {
         $response = $this->app->handle(new Request('POST', '/', ['secret' => 'x', 'duration' => '1h']));
@@ -172,6 +205,9 @@ final class AppTest extends TestCase
         $this->assertSame(403, $response->status);
     }
 
+    /**
+     * @throws Throwable
+     */
     public function testCrossSitePostIsRejected(): void
     {
         $response = $this->app->handle(
@@ -187,6 +223,9 @@ final class AppTest extends TestCase
         $this->assertSame(403, $response->status);
     }
 
+    /**
+     * @throws Throwable
+     */
     public function testValidationErrorsKeepInput(): void
     {
         $response = $this->post('/', ['secret' => '', 'duration' => 'none', 'short_url' => '1']);
@@ -197,6 +236,9 @@ final class AppTest extends TestCase
         $this->assertMatchesRegularExpression('/<option value="none"\s+selected/', $response->body);
     }
 
+    /**
+     * @throws Throwable
+     */
     public function testCreateShowsQrCodeAndRevokeLink(): void
     {
         $response = $this->post('/', ['secret' => 'abc', 'duration' => '1h', 'single_use' => '1']);
@@ -207,6 +249,9 @@ final class AppTest extends TestCase
         $this->assertStringNotContainsString('abc<', $response->body);
     }
 
+    /**
+     * @throws Throwable
+     */
     public function testRevealPageDoesNotRevealOnGet(): void
     {
         $token = $this->createSecret();
@@ -218,6 +263,9 @@ final class AppTest extends TestCase
         $this->assertSame(200, $this->post('/s', ['token' => $token])->status);
     }
 
+    /**
+     * @throws Throwable
+     */
     public function testRevealSingleUseSecret(): void
     {
         $token = $this->createSecret();
@@ -230,6 +278,9 @@ final class AppTest extends TestCase
         $this->assertSame(404, $this->post('/s', ['token' => $token])->status);
     }
 
+    /**
+     * @throws Throwable
+     */
     public function testRevealShortUrlSecret(): void
     {
         $token = $this->createSecret(['short_url' => '1']);
@@ -238,6 +289,9 @@ final class AppTest extends TestCase
         $this->assertStringContainsString('mon &lt;secret&gt;', $this->post('/s', ['token' => $token])->body);
     }
 
+    /**
+     * @throws Throwable
+     */
     public function testRevealExpiredSecret(): void
     {
         $token = $this->createSecret(['duration' => '10m']);
@@ -246,6 +300,9 @@ final class AppTest extends TestCase
         $this->assertSame(404, $this->post('/s', ['token' => $token])->status);
     }
 
+    /**
+     * @throws Throwable
+     */
     public function testPasswordFlow(): void
     {
         $token = $this->createSecret(['password' => 'p@ss']);
@@ -263,6 +320,9 @@ final class AppTest extends TestCase
         $this->assertStringContainsString('mon &lt;secret&gt;', $response->body);
     }
 
+    /**
+     * @throws Throwable
+     */
     public function testTooManyWrongPasswords(): void
     {
         $token = $this->createSecret(['password' => 'p@ss', 'single_use' => '0']);
@@ -275,6 +335,7 @@ final class AppTest extends TestCase
 
     /**
      * @param array<string, string> $data
+     * @throws Throwable
      */
     private function postFrom(string $ip, string $path, array $data): Response
     {
@@ -290,6 +351,9 @@ final class AppTest extends TestCase
         );
     }
 
+    /**
+     * @throws Throwable
+     */
     public function testCreationIsRateLimitedPerClient(): void
     {
         $data = ['secret' => 'x', 'duration' => '1h', 'single_use' => '1'];
@@ -309,6 +373,9 @@ final class AppTest extends TestCase
         $this->assertSame(201, $this->postFrom('198.51.100.1', '/', $data)->status);
     }
 
+    /**
+     * @throws Throwable
+     */
     public function testRevealIsRateLimited(): void
     {
         for ($i = 0; $i < 30; $i++) {
@@ -317,6 +384,9 @@ final class AppTest extends TestCase
         $this->assertSame(429, $this->postFrom('198.51.100.1', '/s', ['token' => 'abcdefghjk'])->status);
     }
 
+    /**
+     * @throws Throwable
+     */
     public function testUnlimitedQuotaMessage(): void
     {
         $app = App::create(
@@ -338,6 +408,9 @@ final class AppTest extends TestCase
         $this->assertStringContainsString('choisissez une durée de validité', $response->body);
     }
 
+    /**
+     * @throws Throwable
+     */
     public function testRevokeFlow(): void
     {
         $response = $this->post('/', ['secret' => 'abc', 'duration' => '1h']);

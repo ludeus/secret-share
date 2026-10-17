@@ -16,7 +16,7 @@
         "ext-pdo": "*",
         "ext-pdo_sqlite": "*",
         "ext-sodium": "*",
-        "chillerlan/php-qrcode": "^6.0",
+        "chillerlan/php-qrcode": "^6.0.1",
         "firebase/php-jwt": "^7.2"
     },
     "autoload": {

@@ -11,9 +11,11 @@ declare(strict_types=1);
 namespace SecretShare\Test\Unit\Http;
 
 use PHPUnit\Framework\TestCase;
+use Random\RandomException;
 use SecretShare\Http\Csrf;
 use SecretShare\Http\Request;
 use SecretShare\Http\Response;
+use SodiumException;
 
 final class CsrfTest extends TestCase
 {
@@ -30,6 +32,10 @@ final class CsrfTest extends TestCase
         );
     }
 
+    /**
+     * @throws RandomException
+     * @throws SodiumException
+     */
     public function testTokenReusesValidCookie(): void
     {
         $csrf = new Csrf(false);

@@ -11,6 +11,7 @@ declare(strict_types=1);
 namespace SecretShare\Test\Unit\Storage;
 
 use PHPUnit\Framework\TestCase;
+use Random\RandomException;
 use SecretShare\Storage\Database;
 use SecretShare\Storage\SecretRecord;
 use SecretShare\Storage\SecretRepository;
@@ -25,11 +26,17 @@ final class SecretRepositoryTest extends TestCase
         $this->repository = new SecretRepository(Factory::pdo());
     }
 
+    /**
+     * @throws RandomException
+     */
     private static function record(string $id = 'id', ?int $expiresAt = 2000, ?string $payload = null): SecretRecord
     {
         return new SecretRecord('lookup-' . $id, random_bytes(32) . "\0", $payload, true, $expiresAt, 'revoke-' . $id);
     }
 
+    /**
+     * @throws RandomException
+     */
     public function testInsertAndFind(): void
     {
         $record = self::record(payload: "\0\xffbinaire");
@@ -39,12 +46,18 @@ final class SecretRepositoryTest extends TestCase
         $this->assertNull($this->repository->find('inconnu'));
     }
 
+    /**
+     * @throws RandomException
+     */
     public function testDuplicateInsertReturnsFalse(): void
     {
         $this->assertTrue($this->repository->insert(self::record()));
         $this->assertFalse($this->repository->insert(self::record()));
     }
 
+    /**
+     * @throws RandomException
+     */
     public function testDeleteOnlySucceedsOnce(): void
     {
         $this->repository->insert(self::record());
@@ -53,6 +66,9 @@ final class SecretRepositoryTest extends TestCase
         $this->assertFalse($this->repository->delete('lookup-id'));
     }
 
+    /**
+     * @throws RandomException
+     */
     public function testDeleteByRevokeHash(): void
     {
         $this->repository->insert(self::record());
@@ -61,6 +77,9 @@ final class SecretRepositoryTest extends TestCase
         $this->assertSame(0, $this->repository->count());
     }
 
+    /**
+     * @throws RandomException
+     */
     public function testReserveAttemptStopsAtLimit(): void
     {
         $this->repository->insert(self::record());
@@ -72,6 +91,9 @@ final class SecretRepositoryTest extends TestCase
         $this->assertNull($this->repository->reserveAttempt('inconnu', 2));
     }
 
+    /**
+     * @throws RandomException
+     */
     public function testReleaseAttempt(): void
     {
         $this->repository->insert(self::record());
@@ -83,10 +105,13 @@ final class SecretRepositoryTest extends TestCase
         $this->assertSame(0, $this->repository->find('lookup-id')?->failedAttempts);
     }
 
+    /**
+     * @throws RandomException
+     */
     public function testPurgeExpired(): void
     {
         $this->repository->insert(self::record('a', 1000));
-        $this->repository->insert(self::record('b', 2000));
+        $this->repository->insert(self::record('b'));
         $this->repository->insert(self::record('c', null));
 
         $this->assertSame(1, $this->repository->purgeExpired(1000));
@@ -94,6 +119,9 @@ final class SecretRepositoryTest extends TestCase
         $this->assertSame(2, $this->repository->count());
     }
 
+    /**
+     * @throws RandomException
+     */
     public function testIsExpired(): void
     {
         $this->assertTrue(self::record(expiresAt: 1000)->isExpired(1000));
@@ -101,6 +129,9 @@ final class SecretRepositoryTest extends TestCase
         $this->assertFalse(self::record(expiresAt: null)->isExpired(PHP_INT_MAX));
     }
 
+    /**
+     * @throws RandomException
+     */
     public function testDatabaseFileIsCreatedWithRestrictedPermissions(): void
     {
         $directory = sys_get_temp_dir() . '/secret-share-test-' . bin2hex(random_bytes(4));

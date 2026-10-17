@@ -10,10 +10,8 @@ declare(strict_types=1);
 
 namespace SecretShare\View;
 
-use SecretShare\Config;
-
 /**
- * Traductions de l'interface, langue choisie selon l'en-tête Accept-Language
+ * Traductions de l'interface dans une langue (voir LanguageCatalog)
  */
 final readonly class Translator
 {
@@ -24,17 +22,6 @@ final readonly class Translator
         public string $locale,
         private array $messages,
     ) {
-    }
-
-    /**
-     * Charge les messages de la langue préférée du navigateur parmi celles disponibles
-     */
-    public static function forRequest(?string $acceptLanguage, string $defaultLocale, string $directory): self
-    {
-        $locale = self::negotiate($acceptLanguage, Config::SUPPORTED_LOCALES, $defaultLocale);
-        /** @var array<string, string> $messages */
-        $messages = require $directory . '/' . $locale . '.php';
-        return new self($locale, $messages);
     }
 
     /**
@@ -60,6 +47,14 @@ final readonly class Translator
             }
         }
         return $best;
+    }
+
+    /**
+     * Sens d'écriture de la langue : « rtl » pour l'arabe, l'hébreu…, « ltr » sinon
+     */
+    public function direction(): string
+    {
+        return ($this->messages['lang.dir'] ?? 'ltr') === 'rtl' ? 'rtl' : 'ltr';
     }
 
     /**

@@ -34,6 +34,7 @@ use SecretShare\Storage\Maintenance;
 use SecretShare\Storage\RateLimitRepository;
 use SecretShare\Storage\SecretRepository;
 use SecretShare\View\QrCodeRenderer;
+use SecretShare\View\LanguageCatalog;
 use SecretShare\View\Translator;
 use SecretShare\View\View;
 
@@ -57,9 +58,10 @@ use SecretShare\View\View;
  */
 final readonly class App
 {
-    public const string VERSION = '1.1.0';
+    public const string VERSION = '1.2.0';
     public const string SHARE_PATH = '/s';
     public const string REVOKE_PATH = '/r';
+    public const string LANGUAGE_COOKIE = 'lang';
     private const string ROOT_DIR = __DIR__ . '/..';
 
     public function __construct(
@@ -70,8 +72,8 @@ final readonly class App
         private RateLimiter $rateLimiter,
         private ClientIp $clientIp,
         private Clock $clock,
+        private LanguageCatalog $languages,
         private string $templatesDir = self::ROOT_DIR . '/templates',
-        private string $langDir = self::ROOT_DIR . '/lang',
     ) {
     }
 
@@ -84,6 +86,12 @@ final readonly class App
         ?Clock $clock = null,
         ?Envelope $envelope = null
     ): self {
+        $languages = new LanguageCatalog(self::ROOT_DIR . '/lang');
+        if (!$languages->has($config->defaultLocale)) {
+            throw new ConfigException(
+                sprintf('DEFAULT_LOCALE : aucun fichier lang/%s.php pour cette langue.', $config->defaultLocale)
+            );
+        }
         $clock ??= new SystemClock();
         $pdo ??= Database::connect($config->databasePath);
         $keyRing = new KeyRing($config->appSecret);
@@ -107,6 +115,7 @@ final readonly class App
             new RateLimiter($rateLimits, $keyRing, $clock),
             new ClientIp($config->trustedProxies),
             $clock,
+            $languages,
         );
     }
 
@@ -120,10 +129,18 @@ final readonly class App
             );
         }
 
+        [$locale, $localeChosen] = $this->locale($request);
         $view = new View(
             $this->templatesDir,
-            Translator::forRequest($request->header('accept-language'), $this->config->defaultLocale, $this->langDir),
-            ['sourceUrl' => $this->config->sourceUrl, 'version' => self::VERSION]
+            $this->languages->translator($locale),
+            [
+                'sourceUrl' => $this->config->sourceUrl,
+                'version' => self::VERSION,
+                'languages' => $this->languages->languages(),
+                // le sélecteur recharge la page : il n'est proposé que sur les pages consultables en GET
+                'showLanguageSelector' => $request->method === 'GET',
+                'currentPath' => $request->path,
+            ]
         );
         $csrf = new Csrf($this->config->isHttps());
         $csrfToken = $csrf->token($request);
@@ -152,7 +169,37 @@ final readonly class App
 
         $response = $response->withHeader('Content-Type', 'text/html; charset=UTF-8');
         $response = $csrf->attach($request, $response, $csrfToken);
+        if ($localeChosen) {
+            $response = $response->withCookie(
+                sprintf('%s=%s; Path=/; Max-Age=31536000; SameSite=Lax', self::LANGUAGE_COOKIE, $locale)
+                . ($this->config->isHttps() ? '; Secure' : '')
+            );
+        }
         return SecurityHeaders::apply($response, $this->config);
+    }
+
+    /**
+     * Langue de la page, par ordre de priorité : paramètre « lang » de l'URL
+     * (choix explicite, mémorisé dans un cookie), cookie, préférences du navigateur
+     *
+     * @return array{string, bool} code de la langue, et indique s'il vient d'être choisi
+     */
+    private function locale(Request $request): array
+    {
+        $requested = $request->queryString('lang');
+        if ($requested !== null && $this->languages->has($requested)) {
+            return [$requested, true];
+        }
+        $remembered = $request->cookie(self::LANGUAGE_COOKIE);
+        if ($remembered !== null && $this->languages->has($remembered)) {
+            return [$remembered, false];
+        }
+        $negotiated = Translator::negotiate(
+            $request->header('accept-language'),
+            array_keys($this->languages->languages()),
+            $this->config->defaultLocale
+        );
+        return [$negotiated, false];
     }
 
     /**

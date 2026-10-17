@@ -100,7 +100,7 @@ final class ConfigTest extends TestCase
         yield 'concurrence argon2 nulle' => [['ARGON2_CONCURRENCY' => '0'] + self::VALID_ENV];
         yield 'proxy invalide' => [['TRUSTED_PROXIES' => '10.0.0.0/33'] + self::VALID_ENV];
         yield 'proxy non ip' => [['TRUSTED_PROXIES' => 'localhost'] + self::VALID_ENV];
-        yield 'langue inconnue' => [['DEFAULT_LOCALE' => 'de'] + self::VALID_ENV];
+        yield 'langue invalide' => [['DEFAULT_LOCALE' => 'fr-FR'] + self::VALID_ENV];
     }
 
     /**

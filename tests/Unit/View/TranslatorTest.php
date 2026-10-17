@@ -44,21 +44,10 @@ final class TranslatorTest extends TestCase
         $this->assertSame('missing.key', $translator->t('missing.key'));
     }
 
-    public function testForRequestLoadsLanguageFile(): void
+    public function testDirection(): void
     {
-        $translator = Translator::forRequest('en', 'fr', dirname(__DIR__, 3) . '/lang');
-
-        $this->assertSame('en', $translator->locale);
-        $this->assertSame('Yes', $translator->t('common.yes'));
-    }
-
-    public function testLanguagesHaveSameKeys(): void
-    {
-        $fr = require dirname(__DIR__, 3) . '/lang/fr.php';
-        $en = require dirname(__DIR__, 3) . '/lang/en.php';
-        $this->assertIsArray($fr);
-        $this->assertIsArray($en);
-
-        $this->assertSame(array_keys($fr), array_keys($en));
+        $this->assertSame('ltr', (new Translator('fr', []))->direction());
+        $this->assertSame('rtl', (new Translator('ar', ['lang.dir' => 'rtl']))->direction());
+        $this->assertSame('ltr', (new Translator('xx', ['lang.dir' => 'n\'importe quoi']))->direction());
     }
 }

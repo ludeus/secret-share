@@ -9,11 +9,15 @@
 declare(strict_types=1);
 
 return [
+    'lang.name' => 'Français',
+    'lang.dir' => 'ltr',
+
     'app.name' => 'Secret Share',
     'app.tagline' => 'Partagez mots de passe et informations sensibles via un lien éphémère et chiffré.',
     'app.footer' => 'Secrets chiffrés, aucune donnée conservée en clair, aucun journal des liens.',
     'app.source_code' => 'Code source',
     'app.skip_to_content' => 'Aller au contenu',
+    'app.language' => 'Langue',
 
     'common.yes' => 'Oui',
     'common.no' => 'Non',

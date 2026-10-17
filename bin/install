@@ -12,6 +12,7 @@
 
 declare(strict_types=1);
 
+use SecretShare\App;
 use SecretShare\Config;
 use SecretShare\Storage\Database;
 use SecretShare\Storage\SecretRepository;
@@ -21,6 +22,8 @@ require dirname(__DIR__) . '/vendor/autoload.php';
 
 try {
     $config = Config::fromEnvironment(getenv());
+    // vérifie l'ensemble de la configuration, langue par défaut comprise
+    App::create($config);
     $repository = new SecretRepository(Database::connect($config->databasePath));
     $purged = $repository->purgeExpired((new SystemClock())->now());
     fwrite(

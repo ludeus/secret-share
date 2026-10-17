@@ -4,6 +4,16 @@ Toutes les évolutions notables sont consignées ici.
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le projet
 respecte le [versionnage sémantique](https://semver.org/lang/fr/).
 
+## [1.2.0] - 2026-10-17
+
+### Ajouts
+
+- Interface disponible en 9 langues : anglais, chinois (simplifié), hindi, espagnol, français,
+  arabe, portugais, russe et allemand, avec prise en charge de l'écriture de droite à gauche.
+- Sélecteur de langue, choix mémorisé dans un cookie ; à défaut, langue du navigateur.
+- Ajout d'une langue par simple dépôt d'un fichier `lang/<code>.php`, textes manquants affichés
+  en anglais, vérification par `composer translations` (incluse dans `composer check`).
+
 ## [1.1.0] - 2026-10-17
 
 ### Ajouts

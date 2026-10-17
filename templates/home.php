@@ -45,7 +45,7 @@ $shortUrlAllowed = $old['single_use'] === '1' || $old['duration'] !== 'none';
 
         <div class="field">
             <label for="secret"><?= $this->t('home.secret') ?></label>
-            <textarea id="secret" name="secret" rows="5" required
+            <textarea id="secret" name="secret" rows="5" required dir="auto"
                       maxlength="<?= $this->e($maxSecretLength) ?>"
                       autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"
                       placeholder="<?= $this->t('home.secret_placeholder') ?>"
@@ -76,7 +76,7 @@ $shortUrlAllowed = $old['single_use'] === '1' || $old['duration'] !== 'none';
                     <span class="optional"><?= $this->t('home.optional') ?></span>
                 </label>
                 <div class="input-group">
-                    <input type="password" id="password" name="password" autocomplete="new-password"
+                    <input type="password" id="password" name="password" autocomplete="new-password" dir="auto"
                            maxlength="<?= $this->e($maxPasswordLength) ?>"
                            aria-describedby="password-hint"<?= $invalid('password') ?>>
                     <button type="button" class="btn btn-ghost btn-icon" data-toggle-password="password"

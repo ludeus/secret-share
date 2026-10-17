@@ -264,6 +264,25 @@
         });
     }
 
+    /**
+     * Sélecteur de langue : recharge la page dans la langue choisie, en conservant
+     * le jeton du lien (fragment #) sur les pages d'ouverture et de destruction
+     */
+    function initLanguageSwitch() {
+        document.querySelectorAll('[data-lang-switch]').forEach(function (form) {
+            var select = form.querySelector('select');
+            select.addEventListener('change', function () {
+                var token = document.querySelector('[data-fragment-token]');
+                var url = form.action + '?lang=' + encodeURIComponent(select.value);
+                if (token && token.value !== '') {
+                    url += '#' + token.value;
+                }
+                window.location.assign(url);
+            });
+        });
+    }
+
+    initLanguageSwitch();
     initCopyButtons();
     initPasswordToggles();
     initLocalTimes();

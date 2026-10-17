@@ -1,0 +1,50 @@
+#!/usr/bin/env php
+<?php
+
+/**
+ * Secret Share - partage de secrets éphémères et chiffrés.
+ *
+ * Vérifie les fichiers de langue (lang/*.php) par rapport à l'anglais :
+ *
+ *   bin/check-translations          toutes les langues
+ *   bin/check-translations de       une langue
+ *
+ * @license AGPL-3.0-or-later
+ */
+
+declare(strict_types=1);
+
+use SecretShare\View\LanguageCatalog;
+use SecretShare\View\TranslationChecker;
+
+require dirname(__DIR__) . '/vendor/autoload.php';
+
+$catalog = new LanguageCatalog(dirname(__DIR__) . '/lang');
+$checker = new TranslationChecker($catalog);
+$codes = array_slice($argv, 1) ?: array_keys($catalog->languages());
+$reference = count($catalog->messages(LanguageCatalog::REFERENCE));
+
+$failed = false;
+foreach ($codes as $code) {
+    if (!$catalog->has($code)) {
+        fwrite(STDERR, sprintf("%s : fichier lang/%s.php introuvable\n", $code, $code));
+        $failed = true;
+        continue;
+    }
+    $problems = $checker->check($code);
+    $translated = count(
+        array_intersect_key($catalog->messages($code), $catalog->messages(LanguageCatalog::REFERENCE))
+    );
+    printf(
+        "%-4s %s %3d %% %s\n",
+        $code,
+        mb_str_pad($catalog->languages()[$code] ?? $code, 12),
+        $reference > 0 ? intdiv(100 * $translated, $reference) : 0,
+        $problems === [] ? 'OK' : sprintf('%d problème(s)', count($problems))
+    );
+    foreach ($problems as $problem) {
+        printf("       - %s\n", $problem);
+    }
+    $failed = $failed || $problems !== [];
+}
+exit($failed ? 1 : 0);

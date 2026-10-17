@@ -7,11 +7,14 @@
  * @var string                  $content
  * @var string                  $sourceUrl
  * @var string                  $version
+ * @var array<string, string>   $languages
+ * @var bool                    $showLanguageSelector
+ * @var string                  $currentPath
  */
 
 ?>
 <!doctype html>
-<html lang="<?= $this->e($this->locale()) ?>">
+<html lang="<?= $this->e($this->locale()) ?>" dir="<?= $this->e($this->direction()) ?>">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -37,6 +40,21 @@
             </svg>
             <span><?= $this->t('app.name') ?></span>
         </a>
+        <?php if ($showLanguageSelector && count($languages) > 1) : ?>
+            <form class="lang-switch" method="get" action="<?= $this->e($currentPath) ?>" data-lang-switch>
+                <svg class="lang-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>
+                </svg>
+                <label for="lang-select" class="visually-hidden"><?= $this->t('app.language') ?></label>
+                <select id="lang-select" name="lang">
+                    <?php foreach ($languages as $code => $name) : ?>
+                        <option value="<?= $this->e($code) ?>" lang="<?= $this->e($code) ?>"
+                            <?= $code === $this->locale() ? 'selected' : '' ?>><?= $this->e($name) ?></option>
+                    <?php endforeach; ?>
+                </select>
+                <noscript><button type="submit" class="btn btn-secondary">OK</button></noscript>
+            </form>
+        <?php endif; ?>
     </header>
     <main id="main" class="container">
         <?= $content ?>

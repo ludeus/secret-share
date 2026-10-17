@@ -9,11 +9,15 @@
 declare(strict_types=1);
 
 return [
+    'lang.name' => 'English',
+    'lang.dir' => 'ltr',
+
     'app.name' => 'Secret Share',
     'app.tagline' => 'Share passwords and sensitive data through an ephemeral, encrypted link.',
     'app.footer' => 'Encrypted secrets, no plaintext ever stored, no link logging.',
     'app.source_code' => 'Source code',
     'app.skip_to_content' => 'Skip to content',
+    'app.language' => 'Language',
 
     'common.yes' => 'Yes',
     'common.no' => 'No',

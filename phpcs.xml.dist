@@ -7,6 +7,7 @@
     <file>public/index.php</file>
     <file>bin/install</file>
     <file>bin/unblock</file>
+    <file>bin/check-translations</file>
     <file>lang</file>
 
     <arg name="extensions" value="php"/>

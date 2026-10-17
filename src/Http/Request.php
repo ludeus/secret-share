@@ -20,6 +20,7 @@ final readonly class Request
      * @param array<array-key, mixed>   $cookies
      * @param array<string, string>     $headers en minuscules
      * @param string                    $remoteAddr adresse IP de la connexion (proxy éventuel)
+     * @param array<array-key, mixed>   $query paramètres de l'URL
      */
     public function __construct(
         public string $method,
@@ -28,6 +29,7 @@ final readonly class Request
         public array $cookies = [],
         public array $headers = [],
         public string $remoteAddr = '',
+        public array $query = [],
     ) {
     }
 
@@ -48,6 +50,7 @@ final readonly class Request
             cookies: $_COOKIE,
             headers: $headers,
             remoteAddr: is_string($_SERVER['REMOTE_ADDR'] ?? null) ? $_SERVER['REMOTE_ADDR'] : '',
+            query: $_GET,
         );
     }
 
@@ -60,6 +63,12 @@ final readonly class Request
     {
         $value = $this->post[$name] ?? '';
         return is_string($value) ? $value : '';
+    }
+
+    public function queryString(string $name): ?string
+    {
+        $value = $this->query[$name] ?? null;
+        return is_string($value) ? $value : null;
     }
 
     public function cookie(string $name): ?string

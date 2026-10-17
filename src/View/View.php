@@ -62,6 +62,14 @@ final readonly class View
     }
 
     /**
+     * Sens d'écriture de la langue courante (attribut dir)
+     */
+    public function direction(): string
+    {
+        return $this->translator->direction();
+    }
+
+    /**
      * Date ISO 8601 (UTC) affichée en heure locale par le navigateur
      */
     public function time(int $timestamp): string

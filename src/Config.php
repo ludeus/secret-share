@@ -11,6 +11,7 @@ declare(strict_types=1);
 namespace SecretShare;
 
 use SecretShare\Http\ClientIp;
+use SecretShare\View\LanguageCatalog;
 
 /**
  * Configuration de l'application, construite et validée à partir des
@@ -22,7 +23,6 @@ final readonly class Config
     public const int MIN_SECRET_KEY_LENGTH = 32;
     public const int MIN_SHORT_CODE_LENGTH = 8;
     public const int MAX_SHORT_CODE_LENGTH = 64;
-    public const array SUPPORTED_LOCALES = ['fr', 'en'];
     public const string DEFAULT_SOURCE_URL = 'https://github.com/ludeus/secret-share';
 
     public function __construct(
@@ -86,8 +86,8 @@ final readonly class Config
         if ($databasePath === '') {
             throw new ConfigException('DATABASE_PATH ne peut pas être vide.');
         }
-        if (!in_array($defaultLocale, self::SUPPORTED_LOCALES, true)) {
-            throw new ConfigException('DEFAULT_LOCALE doit valoir : ' . implode(', ', self::SUPPORTED_LOCALES));
+        if (!LanguageCatalog::isValidCode($defaultLocale)) {
+            throw new ConfigException('DEFAULT_LOCALE doit être un code de langue (fr, en, es…).');
         }
     }
 

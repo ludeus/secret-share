@@ -46,8 +46,10 @@
         "cs-check": "phpcs",
         "cs-fix": "phpcbf",
         "stan": "phpstan analyse --memory-limit=512M",
+        "translations": "php bin/check-translations",
         "check": [
             "@cs-check",
+            "@translations",
             "@stan",
             "@test"
         ]
@@ -57,6 +59,7 @@
         "cs-check": "Vérifie le standard de codage",
         "cs-fix": "Corrige automatiquement le standard de codage",
         "stan": "Analyse statique",
+        "translations": "Vérifie les fichiers de langue",
         "check": "Toutes les vérifications (CI)"
     }
 }

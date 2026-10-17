@@ -10,7 +10,8 @@ Partagez un mot de passe, une clé d'API ou toute information sensible au moyen 
 - **Sans trace** : le jeton voyage dans le fragment de l'URL (`#…`), jamais envoyé
   au serveur, donc absent de tous les journaux HTTP ; aucune IP, date de création
   ou métadonnée n'est conservée
-- Interface sobre, responsive, accessible, thème clair/sombre automatique, français et anglais
+- Interface sobre, responsive, accessible, thème clair/sombre automatique, en 9 langues
+  (dont l'arabe, écrit de droite à gauche) avec sélecteur de langue
 - Image Docker durcie : utilisateur non privilégié, système de fichiers en lecture seule
 
 ![Formulaire de création](docs/screenshot.png)
@@ -70,7 +71,7 @@ Une valeur invalide empêche le conteneur de démarrer, avec un message explicit
 | `RATE_LIMIT_CREATE_PER_HOUR`   | `30`             | Créations par visiteur et par heure (`0` : pas de limite)                |
 | `RATE_LIMIT_READ_PER_MINUTE`   | `30`             | Ouvertures et destructions par visiteur et par minute                    |
 | `TRUSTED_PROXIES`       | plages privées          | Proxys dont l'en-tête `X-Forwarded-For` est pris en compte               |
-| `DEFAULT_LOCALE`        | `fr`                    | Langue si le navigateur n'en propose aucune disponible (`fr`, `en`)      |
+| `DEFAULT_LOCALE`        | `fr`                    | Langue si le navigateur n'en propose aucune disponible (code de `lang/`) |
 | `SOURCE_URL`            | lien GitHub du projet   | Lien « Code source » du pied de page (exigé par l'AGPL)                  |
 | `DATABASE_PATH`         | `/app/data/secret-share.sqlite` | Emplacement de la base SQLite                                    |
 | `IMAGE`                 | `ludeus/secret-share:latest` | Image utilisée par Compose                                          |
@@ -250,6 +251,16 @@ Les mêmes vérifications sont disponibles sans PHP local :
 docker build --target test -t secret-share:test . && docker run --rm secret-share:test
 ```
 
+### Traductions
+
+La langue est choisie par le sélecteur de l'interface (mémorisé dans un cookie), sinon d'après
+les préférences du navigateur, sinon `DEFAULT_LOCALE`. Chaque fichier `lang/<code>.php` est une
+langue : en ajouter une se résume à déposer un fichier, voir [CONTRIBUTING.md](CONTRIBUTING.md).
+
+```bash
+composer translations    # état de toutes les langues (textes manquants, paramètres)
+```
+
 ### Organisation du code
 
 ```
@@ -262,7 +273,7 @@ src/
 ├── Storage/             base SQLite et accès aux données
 └── View/                gabarits, traductions, QR codes
 templates/               gabarits PHP (échappement systématique)
-lang/                    traductions fr et en
+lang/                    traductions, une langue par fichier
 public/                  point d'entrée et ressources statiques
 docker/                  configuration Apache, PHP et point d'entrée du conteneur
 ```

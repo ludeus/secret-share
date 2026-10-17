@@ -6,6 +6,7 @@ parameters:
         - public/index.php
         - bin/install
         - bin/unblock
+        - bin/check-translations
         - lang
         - templates
     tmpDir: .phpstan.cache

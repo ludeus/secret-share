@@ -83,7 +83,7 @@ final class AppTest extends TestCase
         $response = $this->get('/');
 
         $this->assertSame(200, $response->status);
-        $this->assertStringContainsString('<html lang="fr">', $response->body);
+        $this->assertStringContainsString('<html lang="fr" dir="ltr">', $response->body);
         $this->assertStringContainsString('name="secret"', $response->body);
         $this->assertStringContainsString('<option value="1d"', $response->body);
         $this->assertMatchesRegularExpression('/id="single_use"[^>]*checked/', $response->body);
@@ -95,7 +95,56 @@ final class AppTest extends TestCase
 
     public function testHomePageInEnglish(): void
     {
-        $this->assertStringContainsString('<html lang="en">', $this->get('/', 'en-GB,en')->body);
+        $this->assertStringContainsString('<html lang="en" dir="ltr">', $this->get('/', 'en-GB,en')->body);
+    }
+
+    public function testLanguageSelectorAndDetection(): void
+    {
+        $response = $this->get('/', 'es-ES,es;q=0.9');
+
+        $this->assertStringContainsString('<html lang="es" dir="ltr">', $response->body);
+        $this->assertStringContainsString('Compartir un secreto', $response->body);
+        $this->assertMatchesRegularExpression('/<option value="zh" lang="zh"\s*>中文<\/option>/', $response->body);
+        $this->assertMatchesRegularExpression('/<option value="es" lang="es"\s*selected>Español/', $response->body);
+    }
+
+    public function testLanguageChosenInUrlIsRemembered(): void
+    {
+        $response = $this->app->handle(new Request('GET', '/', query: ['lang' => 'ar']));
+
+        $this->assertStringContainsString('<html lang="ar" dir="rtl">', $response->body);
+        $this->assertContains('lang=ar; Path=/; Max-Age=31536000; SameSite=Lax; Secure', $response->cookies);
+
+        // le cookie l'emporte ensuite sur les préférences du navigateur
+        $remembered = $this->app->handle(
+            new Request('GET', '/s', cookies: ['lang' => 'de'], headers: ['accept-language' => 'fr'])
+        );
+        $this->assertStringContainsString('<html lang="de" dir="ltr">', $remembered->body);
+    }
+
+    public function testUnknownLanguageIsIgnored(): void
+    {
+        $response = $this->app->handle(
+            new Request(
+                'GET',
+                '/',
+                cookies: ['lang' => '../etc'],
+                headers: ['accept-language' => 'en'],
+                query: ['lang' => 'xx']
+            )
+        );
+
+        $this->assertStringContainsString('<html lang="en"', $response->body);
+        $this->assertSame([], array_filter($response->cookies, fn (string $c): bool => str_starts_with($c, 'lang=')));
+    }
+
+    public function testNoLanguageSelectorOnResultPages(): void
+    {
+        $response = $this->post('/', ['secret' => 'x', 'duration' => '1h', 'single_use' => '1']);
+
+        $this->assertSame(201, $response->status);
+        $this->assertStringNotContainsString('data-lang-switch', $response->body);
+        $this->assertStringContainsString('data-lang-switch', $this->get('/')->body);
     }
 
     public function testHealth(): void

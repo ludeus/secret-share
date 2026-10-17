@@ -26,7 +26,7 @@
     <div class="field">
         <label for="share-url"><?= $this->t('created.share_url') ?></label>
         <div class="input-group">
-            <input type="text" id="share-url" value="<?= $this->e($shareUrl) ?>" readonly
+            <input type="text" id="share-url" value="<?= $this->e($shareUrl) ?>" readonly dir="ltr"
                    class="mono" spellcheck="false" data-select-on-focus>
             <button type="button" class="btn btn-primary" data-copy="share-url"
                     data-label-copied="<?= $this->t('action.copied') ?>">
@@ -67,7 +67,7 @@
         <summary><?= $this->t('created.revoke_title') ?></summary>
         <p class="hint"><?= $this->t('created.revoke_hint') ?></p>
         <div class="input-group">
-            <input type="text" id="revoke-url" value="<?= $this->e($revokeUrl) ?>" readonly
+            <input type="text" id="revoke-url" value="<?= $this->e($revokeUrl) ?>" readonly dir="ltr"
                    class="mono" spellcheck="false" aria-label="<?= $this->t('created.revoke_title') ?>"
                    data-select-on-focus>
             <button type="button" class="btn btn-secondary" data-copy="revoke-url"

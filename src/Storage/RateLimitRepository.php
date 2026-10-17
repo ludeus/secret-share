@@ -37,6 +37,39 @@ final readonly class RateLimitRepository
         return is_int($hits) ? $hits : (int)(is_scalar($hits) ? $hits : PHP_INT_MAX);
     }
 
+    public function hits(string $bucket): int
+    {
+        $statement = $this->pdo->prepare('SELECT hits FROM rate_limits WHERE bucket = :bucket');
+        $statement->execute([':bucket' => $bucket]);
+        $hits = $statement->fetchColumn();
+        $statement->closeCursor();
+        return is_int($hits) ? $hits : 0;
+    }
+
+    public function delete(string $bucket): bool
+    {
+        $statement = $this->pdo->prepare('DELETE FROM rate_limits WHERE bucket = :bucket');
+        $statement->execute([':bucket' => $bucket]);
+        return $statement->rowCount() === 1;
+    }
+
+    public function deleteAll(): int
+    {
+        return (int)$this->pdo->exec('DELETE FROM rate_limits');
+    }
+
+    /**
+     * Nombre de compteurs actifs (un par client, type d'action et fenêtre)
+     */
+    public function countActive(int $now): int
+    {
+        $statement = $this->pdo->prepare('SELECT COUNT(*) FROM rate_limits WHERE expires_at > :now');
+        $statement->execute([':now' => $now]);
+        $count = $statement->fetchColumn();
+        $statement->closeCursor();
+        return is_int($count) ? $count : 0;
+    }
+
     public function purgeExpired(int $now): int
     {
         $statement = $this->pdo->prepare('DELETE FROM rate_limits WHERE expires_at <= :now');

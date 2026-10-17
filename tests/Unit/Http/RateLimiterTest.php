@@ -65,6 +65,33 @@ final class RateLimiterTest extends TestCase
         }
     }
 
+    public function testStatusAndReset(): void
+    {
+        $this->limiter->consume(RateLimiter::SCOPE_CREATE, '1.2.3.4', 1, 60);
+        $this->limiter->consume(RateLimiter::SCOPE_CREATE, '1.2.3.4', 1, 3600);
+        $this->limiter->consume(RateLimiter::SCOPE_CREATE, '1.2.3.4', 1, 60);
+        $this->limiter->consume(RateLimiter::SCOPE_READ, '5.6.7.8', 1, 60);
+
+        $this->assertSame(
+            ['create/60s' => 2, 'create/3600s' => 1, 'read/60s' => 0],
+            $this->limiter->status('1.2.3.4')
+        );
+
+        $this->assertSame(2, $this->limiter->reset('1.2.3.4'));
+        $this->assertNull($this->limiter->consume(RateLimiter::SCOPE_CREATE, '1.2.3.4', 1, 60));
+        // les autres clients ne sont pas concernés
+        $this->assertNotNull($this->limiter->consume(RateLimiter::SCOPE_READ, '5.6.7.8', 1, 60));
+    }
+
+    public function testResetAll(): void
+    {
+        $this->limiter->consume(RateLimiter::SCOPE_CREATE, '1.2.3.4', 1, 60);
+        $this->limiter->consume(RateLimiter::SCOPE_READ, '5.6.7.8', 1, 60);
+
+        $this->assertSame(2, $this->limiter->resetAll());
+        $this->assertSame(['create/60s' => 0, 'create/3600s' => 0, 'read/60s' => 0], $this->limiter->status('1.2.3.4'));
+    }
+
     public function testAddressIsNeverStored(): void
     {
         $this->limiter->consume('create', '203.0.113.77', 5, 60);

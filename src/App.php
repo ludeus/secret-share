@@ -57,7 +57,7 @@ use SecretShare\View\View;
  */
 final readonly class App
 {
-    public const string VERSION = '1.0.1';
+    public const string VERSION = '1.1.0';
     public const string SHARE_PATH = '/s';
     public const string REVOKE_PATH = '/r';
     private const string ROOT_DIR = __DIR__ . '/..';
@@ -164,10 +164,24 @@ final readonly class App
         $ip = $this->clientIp->resolve($request);
         $client = $ip === null ? 'unknown' : ClientIp::bucket($ip);
         if ($request->path === '/') {
-            return $this->rateLimiter->consume('create', $client, $this->config->createLimitPerMinute, 60)
-                ?? $this->rateLimiter->consume('create', $client, $this->config->createLimitPerHour, 3600);
+            return $this->rateLimiter->consume(
+                RateLimiter::SCOPE_CREATE,
+                $client,
+                $this->config->createLimitPerMinute,
+                RateLimiter::WINDOWS[RateLimiter::SCOPE_CREATE][0]
+            ) ?? $this->rateLimiter->consume(
+                RateLimiter::SCOPE_CREATE,
+                $client,
+                $this->config->createLimitPerHour,
+                RateLimiter::WINDOWS[RateLimiter::SCOPE_CREATE][1]
+            );
         }
-        return $this->rateLimiter->consume('read', $client, $this->config->readLimitPerMinute, 60);
+        return $this->rateLimiter->consume(
+            RateLimiter::SCOPE_READ,
+            $client,
+            $this->config->readLimitPerMinute,
+            RateLimiter::WINDOWS[RateLimiter::SCOPE_READ][0]
+        );
     }
 
     /**

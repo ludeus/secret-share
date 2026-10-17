@@ -41,7 +41,7 @@ jobs:
         run: composer test
 
       - name: Shellcheck
-        run: shellcheck install.sh docker/entrypoint.sh
+        run: shellcheck install.sh unblock.sh docker/entrypoint.sh
 
   docker:
     name: Image Docker

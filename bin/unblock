@@ -1,0 +1,77 @@
+#!/usr/bin/env php
+<?php
+
+/**
+ * Secret Share - partage de secrets éphémères et chiffrés.
+ *
+ * Gestion des compteurs de limitation de débit de l'application.
+ * À lancer dans le conteneur, de préférence via ./unblock.sh depuis l'hôte.
+ *
+ *   bin/unblock <adresse IP>              débloque une adresse
+ *   bin/unblock --all                     débloque toutes les adresses
+ *   bin/unblock --status [<adresse IP>]   état d'une adresse, ou nombre de compteurs actifs
+ *
+ * @license AGPL-3.0-or-later
+ */
+
+declare(strict_types=1);
+
+use SecretShare\Config;
+use SecretShare\Crypto\KeyRing;
+use SecretShare\Http\ClientIp;
+use SecretShare\Http\RateLimiter;
+use SecretShare\Storage\Database;
+use SecretShare\Storage\RateLimitRepository;
+use SecretShare\SystemClock;
+
+require dirname(__DIR__) . '/vendor/autoload.php';
+
+$run = static function (string ...$args): int {
+    $usage = "Usage : unblock <adresse IP> | --all | --status [<adresse IP>]\n";
+    $config = Config::fromEnvironment(getenv());
+    $clock = new SystemClock();
+    $repository = new RateLimitRepository(Database::connect($config->databasePath));
+    $limiter = new RateLimiter($repository, new KeyRing($config->appSecret), $clock);
+
+    // les compteurs sont indexés par l'empreinte de l'adresse (ou de son préfixe /64 en IPv6)
+    $client = static function (string $ip): string {
+        if (!ClientIp::isIp($ip)) {
+            throw new InvalidArgumentException(sprintf('Adresse IP invalide : %s', $ip));
+        }
+        return ClientIp::bucket($ip);
+    };
+
+    switch ($args[0] ?? '') {
+        case '--all':
+            printf("%d compteur(s) supprimé(s) : toutes les adresses sont débloquées\n", $limiter->resetAll());
+            return 0;
+        case '--status':
+            if (!isset($args[1])) {
+                printf("%d compteur(s) actif(s)\n", $repository->countActive($clock->now()));
+                return 0;
+            }
+            foreach ($limiter->status($client($args[1])) as $window => $hits) {
+                printf("%-12s %d action(s)\n", $window, $hits);
+            }
+            return 0;
+        case '':
+        case '--help':
+        case '-h':
+            fwrite(STDERR, $usage);
+            return 1;
+        default:
+            if (count($args) !== 1 || str_starts_with($args[0], '-')) {
+                fwrite(STDERR, $usage);
+                return 1;
+            }
+            printf("%s débloquée (%d compteur(s) supprimé(s))\n", $args[0], $limiter->reset($client($args[0])));
+            return 0;
+    }
+};
+
+try {
+    exit($run(...array_slice($argv, 1)));
+} catch (Throwable $e) {
+    fwrite(STDERR, sprintf("[secret-share] ERREUR : %s\n", $e->getMessage()));
+    exit(1);
+}

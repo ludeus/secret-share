@@ -12,6 +12,7 @@ coverage
 *.sqlite-journal
 docker-compose.yml
 install.sh
+unblock.sh
 docs
 *.md
 !README.md

@@ -105,6 +105,21 @@ location / {
 }
 ```
 
+### Débloquer une adresse
+
+Un visiteur légitime bloqué par la limitation de débit peut être débloqué depuis le serveur :
+
+```bash
+./unblock.sh 203.0.113.7          # débloque une adresse
+./unblock.sh --all                # débloque toutes les adresses
+./unblock.sh --status 203.0.113.7 # compteurs d'une adresse (--status seul : résumé global)
+```
+
+Le script est réservé à root et aux membres du groupe `docker`. Il agit sur les compteurs
+de l'application (dans le conteneur) et, si `QOS_CONSOLE_URL` est renseigné dans `.env`, sur
+ceux de `mod_qos` (voir plus bas). L'application ne conservant que des empreintes, il n'est
+pas possible de lister les adresses bloquées : il faut connaître l'adresse à débloquer.
+
 ### Protection contre les abus
 
 - **Limitation de débit par visiteur** : créations (5 par minute, 30 par heure) et ouvertures
@@ -138,6 +153,16 @@ QS_ErrorResponseCode 429
     # au plus 20 requêtes simultanées vers l'application
     QS_LocRequestLimit / 20
     # …
+</VirtualHost>
+
+# console mod_qos accessible uniquement depuis le serveur, pour ./unblock.sh
+# (QOS_CONSOLE_URL=http://127.0.0.1:8766/qos-console dans .env)
+Listen 127.0.0.1:8766
+<VirtualHost 127.0.0.1:8766>
+    <Location /qos-console>
+        SetHandler qos-console
+        Require ip 127.0.0.1
+    </Location>
 </VirtualHost>
 ```
 

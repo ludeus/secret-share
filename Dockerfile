@@ -35,8 +35,9 @@ RUN apt-get update \
     && apt-get upgrade -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
-# opcache pour les performances ; sodium et pdo_sqlite sont fournis par l'image officielle
-RUN docker-php-ext-install -j"$(nproc)" opcache \
+# opcache pour les performances (intégré à PHP depuis la 8.5, extension à installer avant) ;
+# sodium et pdo_sqlite sont fournis par l'image officielle
+RUN (php -m | grep -qx 'Zend OPcache' || docker-php-ext-install -j"$(nproc)" opcache) \
     && a2enmod headers \
     && a2dismod -f autoindex status negotiation \
     && rm -f /etc/apache2/sites-enabled/*.conf /etc/apache2/conf-enabled/other-vhosts-access-log.conf \

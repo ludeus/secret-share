@@ -164,10 +164,13 @@ update_dependencies() {
         -e COMPOSER_HOME=/tmp/composer composer:2 update --no-interaction --no-progress --no-scripts 2>&1)" \
         || { echo "$composer_output"; fail "composer update a échoué"; }
     echo "$composer_output"
-    # « - Upgrading vendor/paquet (1.0.0 => 1.0.1) » : une ligne de résumé par paquet
-    while read -r line; do
-        summary+=("$line")
-    done < <(echo "$composer_output" | sed -n 's/^ *- \(Upgrading\|Installing\|Removing\) \(.*\)$/composer : \1 \2/p')
+    # « - Upgrading vendor/paquet (1.0.0 => 1.0.1) » : une ligne de résumé par paquet, seulement si
+    # composer.lock a changé (sinon il ne s'agit que de la remise en état de vendor/)
+    if ! git diff --quiet -- composer.lock; then
+        while read -r line; do
+            summary+=("$line")
+        done < <(echo "$composer_output" | sed -n 's/^ *- \(Upgrading\|Installing\|Removing\) \(.*\)$/composer : \1 \2/p')
+    fi
     npm update --prefix tests/e2e --no-audit --no-fund --silent || fail "npm update a échoué"
     npm ci --prefix tests/e2e --no-audit --no-fund --silent || fail "npm ci a échoué"
     if ! git diff --quiet -- tests/e2e/package-lock.json; then
@@ -226,9 +229,8 @@ ai_fix() {
     command -v claude >/dev/null 2>&1 || return 1
     [ "${AI_FIX:-1}" = "1" ] || return 1
     step "Correction des vulnérabilités par Claude Code"
-    claude -p --permission-mode acceptEdits \
-        --allowedTools "Read,Edit,Write,Glob,Grep,Bash(docker run --rm:*),Bash(git diff:*),Bash(git status:*)" \
-        "Tu interviens sur le projet Secret Share (${ROOT}) lors de sa maintenance mensuelle automatisée.
+    # consigne passée par l'entrée standard : --allowedTools accepte plusieurs valeurs et l'avalerait
+    printf '%s\n' "Tu interviens sur le projet Secret Share (${ROOT}) lors de sa maintenance mensuelle automatisée.
 Trivy signale les vulnérabilités HIGH/CRITICAL corrigeables suivantes dans l'image Docker ou les dépendances :
 
 $(cat "$report")
@@ -242,7 +244,9 @@ Corrige-les avec le changement le plus petit possible, par ordre de préférence
    exception dans .trivyignore en respectant le format décrit en tête du fichier : date du
    jour, paquet, raison précise, date de réexamen à 3 mois.
 Ne modifie aucun autre fichier, ne commite rien. Termine par un résumé d'une ligne par CVE
-(corrigée ou ignorée, et pourquoi)." || return 1
+(corrigée ou ignorée, et pourquoi)." | claude -p --permission-mode acceptEdits \
+        --allowedTools "Read,Edit,Write,Glob,Grep,Bash(docker run --rm:*),Bash(git diff:*),Bash(git status:*)" \
+        || return 1
 }
 
 # adapte le code aux montées de version lorsque les tests échouent
@@ -250,9 +254,7 @@ ai_upgrade() {
     command -v claude >/dev/null 2>&1 || return 1
     [ "${AI_FIX:-1}" = "1" ] || return 1
     step "Adaptation du code aux montées de version par Claude Code"
-    claude -p --permission-mode acceptEdits \
-        --allowedTools "Read,Edit,Write,Glob,Grep,Bash(docker build:*),Bash(docker run --rm:*),Bash(git diff:*),Bash(git status:*)" \
-        "Tu interviens sur le projet Secret Share (${ROOT}) lors de sa maintenance mensuelle automatisée.
+    printf '%s\n' "Tu interviens sur le projet Secret Share (${ROOT}) lors de sa maintenance mensuelle automatisée.
 Les montées de version suivantes viennent d'être appliquées et les tests échouent désormais :
 
 $(printf -- '- %s\n' "${upgrades[@]}")
@@ -262,7 +264,10 @@ sans revenir sur les montées de version. Pour une montée de version de PHP, Re
 « docker run --rm -v ${ROOT}:/app -w /app -u $(id -u):$(id -g) php:<version>-cli php vendor/bin/rector process ».
 Vérifie ton travail avec « docker build --target test -t secret-share:ai ${ROOT} && docker run --rm secret-share:ai »
 (standard de codage, traductions, analyse statique, PHPUnit). Respecte le style du projet : PSR-12,
-commentaires en français, identifiants en anglais. Ne commite rien. Termine par un résumé des changements." || return 1
+commentaires en français, identifiants en anglais. Ne commite rien. Termine par un résumé des changements." \
+        | claude -p --permission-mode acceptEdits \
+        --allowedTools "Read,Edit,Write,Glob,Grep,Bash(docker build:*),Bash(docker run --rm:*),Bash(git diff:*),Bash(git status:*)" \
+        || return 1
 }
 
 # ---------------------------------------------------------------------------

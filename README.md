@@ -125,13 +125,16 @@ sites qu'il héberge) contre un flot de requêtes, ajoutez une limitation au niv
 `limit_req` d'nginx, ou `mod_qos` pour Apache, par exemple :
 
 ```apache
-# configuration globale : 120 requêtes par minute et par adresse vers le vhost marqué
+# configuration globale : 120 requêtes par minute et par adresse vers secret.example.org ;
+# QS_Cond restreint le blocage à ce site (QS_ClientEventLimitCount bloquerait l'adresse
+# sur tous les sites du serveur)
+SetEnvIfNoCase Host "^secret\.example\.org(:[0-9]+)?$" SECRET_SHARE=1 QS_Cond=secret
 QS_ClientEntries 50000
-QS_ClientEventLimitCount 120 60 SECRET_SHARE
+QS_CondClientEventLimitCount 120 60 SECRET_SHARE ^secret$
+QS_ErrorResponseCode 429
 
 <VirtualHost *:443>
     ServerName secret.example.org
-    SetEnv SECRET_SHARE 1
     # au plus 20 requêtes simultanées vers l'application
     QS_LocRequestLimit / 20
     # …

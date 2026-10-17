@@ -46,6 +46,7 @@ jobs:
       - name: Vulnérabilités des dépendances (Trivy)
         uses: aquasecurity/trivy-action@v0.36.0
         with:
+          version: latest
           scan-type: fs
           scan-ref: .
           severity: HIGH,CRITICAL
@@ -98,6 +99,7 @@ jobs:
         continue-on-error: true
         uses: aquasecurity/trivy-action@v0.36.0
         with:
+          version: latest
           scan-type: fs
           scan-ref: .
           severity: HIGH,CRITICAL
@@ -151,6 +153,7 @@ jobs:
         id: trivy_image
         uses: aquasecurity/trivy-action@v0.36.0
         with:
+          version: latest
           image-ref: secret-share:ci
           severity: HIGH,CRITICAL
           ignore-unfixed: true

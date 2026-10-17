@@ -61,7 +61,7 @@ fi
 
 WORK_IMAGE="secret-share:maintenance"
 TEST_IMAGE="secret-share:maintenance-test"
-TRIVY_IMAGE="aquasec/trivy:${TRIVY_VERSION:-0.58.1}"
+TRIVY_IMAGE="aquasec/trivy:${TRIVY_VERSION:-latest}"
 TRIVY_CACHE="${HOME}/.cache/trivy"
 E2E_CONTAINER="secret-share-maintenance-e2e"
 summary=()
@@ -154,7 +154,8 @@ build_and_test() {
     step "Tests : standard, traductions, analyse statique, PHPUnit"
     docker run --rm "$TEST_IMAGE" || return 1
     docker run --rm -v "$ROOT:/mnt" -w /mnt koalaman/shellcheck:v0.10.0 \
-        install.sh unblock.sh docker/entrypoint.sh maintenance/monthly.sh || return 1
+        install.sh unblock.sh check-token.sh docker/entrypoint.sh \
+        maintenance/monthly.sh maintenance/systemd/install.sh || return 1
 
     step "Tests fonctionnels (navigateur)"
     local port
@@ -178,7 +179,8 @@ trivy_scan() {
     local report="$1" status=0
     step "Analyse Trivy"
     : > "$report"
-    docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$TRIVY_CACHE:/root/.cache/trivy" \
+    # --pull always : dernière version de Trivy à chaque analyse
+    docker run --rm --pull always -v /var/run/docker.sock:/var/run/docker.sock -v "$TRIVY_CACHE:/root/.cache/trivy" \
         -v "$ROOT:/src:ro" "$TRIVY_IMAGE" image --quiet --severity HIGH,CRITICAL --ignore-unfixed \
         --ignorefile /src/.trivyignore --exit-code 1 "$WORK_IMAGE" >> "$report" 2>&1 || status=1
     docker run --rm -v "$TRIVY_CACHE:/root/.cache/trivy" -v "$ROOT:/src:ro" "$TRIVY_IMAGE" \

@@ -1,0 +1,37 @@
+#!/usr/bin/env php
+<?php
+
+/**
+ * Secret Share - partage de secrets éphémères et chiffrés.
+ *
+ * Vérifie la configuration et initialise la base de données.
+ * Exécuté automatiquement au démarrage du conteneur.
+ *
+ * @license AGPL-3.0-or-later
+ */
+
+declare(strict_types=1);
+
+use SecretShare\Config;
+use SecretShare\Storage\Database;
+use SecretShare\Storage\SecretRepository;
+use SecretShare\SystemClock;
+
+require dirname(__DIR__) . '/vendor/autoload.php';
+
+try {
+    $config = Config::fromEnvironment(getenv());
+    $repository = new SecretRepository(Database::connect($config->databasePath));
+    $purged = $repository->purgeExpired((new SystemClock())->now());
+    fwrite(
+        STDOUT,
+        sprintf(
+            "[secret-share] configuration valide, base prête (%d secret(s) actif(s), %d expiré(s) purgé(s))\n",
+            $repository->count(),
+            $purged
+        )
+    );
+} catch (Throwable $e) {
+    fwrite(STDERR, sprintf("[secret-share] ERREUR : %s\n", $e->getMessage()));
+    exit(1);
+}

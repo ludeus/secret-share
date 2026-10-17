@@ -1,0 +1,45 @@
+# Secret Share - déploiement Docker Compose
+#
+#   ./install.sh            # génère .env avec un APP_SECRET aléatoire
+#   docker compose up -d
+#
+# Toute la configuration se fait dans .env (voir .env.dist).
+
+name: secret-share
+
+services:
+  app:
+    image: ${IMAGE:-ludeus/secret-share:latest}
+    build:
+      context: .
+      target: production
+    restart: unless-stopped
+    environment:
+      APP_SECRET: ${APP_SECRET:?APP_SECRET est obligatoire, lancer ./install.sh pour générer le fichier .env}
+      APP_URL: ${APP_URL:?APP_URL est obligatoire (URL publique, ex. https://secret.example.org)}
+      SHORT_CODE_LENGTH: ${SHORT_CODE_LENGTH:-10}
+      SECRET_MAX_LENGTH: ${SECRET_MAX_LENGTH:-10000}
+      PASSWORD_MAX_ATTEMPTS: ${PASSWORD_MAX_ATTEMPTS:-5}
+      DEFAULT_LOCALE: ${DEFAULT_LOCALE:-fr}
+      SOURCE_URL: ${SOURCE_URL:-https://github.com/ludeus/secret-share}
+      MAX_STORED_SECRETS: ${MAX_STORED_SECRETS:-100000}
+      ARGON2_CONCURRENCY: ${ARGON2_CONCURRENCY:-2}
+    ports:
+      - "${APP_BIND:-127.0.0.1}:${APP_PORT:-8765}:8080"
+    volumes:
+      - data:/app/data
+    # durcissement : système de fichiers en lecture seule, aucun privilège
+    read_only: true
+    tmpfs:
+      - /tmp:mode=1777,size=16m
+      - /var/run/apache2:uid=33,gid=33,mode=0700,size=1m
+      - /var/lock/apache2:uid=33,gid=33,mode=0700,size=1m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 200
+    mem_limit: 768m
+
+volumes:
+  data:

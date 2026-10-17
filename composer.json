@@ -1,0 +1,62 @@
+{
+    "name": "ludeus/secret-share",
+    "description": "Partage de secrets éphémères et chiffrés via un lien ou un QR code.",
+    "type": "project",
+    "license": "AGPL-3.0-or-later",
+    "keywords": [
+        "secret",
+        "password",
+        "share",
+        "ephemeral",
+        "encryption",
+        "qrcode"
+    ],
+    "require": {
+        "php": ">=8.3",
+        "ext-pdo": "*",
+        "ext-pdo_sqlite": "*",
+        "ext-sodium": "*",
+        "chillerlan/php-qrcode": "^6.0",
+        "firebase/php-jwt": "^7.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "SecretShare\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "SecretShare\\Test\\": "tests/"
+        }
+    },
+    "config": {
+        "platform": {
+            "php": "8.3.0"
+        },
+        "sort-packages": true,
+        "optimize-autoloader": true
+    },
+    "require-dev": {
+        "phpstan/phpstan": "^2.3",
+        "phpunit/phpunit": "^12.5",
+        "squizlabs/php_codesniffer": "^4.0"
+    },
+    "scripts": {
+        "test": "phpunit",
+        "cs-check": "phpcs",
+        "cs-fix": "phpcbf",
+        "stan": "phpstan analyse --memory-limit=512M",
+        "check": [
+            "@cs-check",
+            "@stan",
+            "@test"
+        ]
+    },
+    "scripts-descriptions": {
+        "test": "Lance les tests unitaires et fonctionnels",
+        "cs-check": "Vérifie le standard de codage",
+        "cs-fix": "Corrige automatiquement le standard de codage",
+        "stan": "Analyse statique",
+        "check": "Toutes les vérifications (CI)"
+    }
+}

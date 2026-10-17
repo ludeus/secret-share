@@ -1,0 +1,105 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Tests et qualité (PHP ${{ matrix.php }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php: ['8.3', '8.4']
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: sodium, pdo_sqlite
+          coverage: none
+
+      - name: Dépendances
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Audit de sécurité des dépendances
+        run: composer audit
+
+      - name: Standard de codage
+        run: composer cs-check
+
+      - name: Analyse statique
+        run: composer stan
+
+      - name: Tests
+        run: composer test
+
+      - name: Shellcheck
+        run: shellcheck install.sh docker/entrypoint.sh
+
+  docker:
+    name: Image Docker
+    runs-on: ubuntu-latest
+    needs: quality
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Tests dans l'image
+        run: |
+          docker build --target test -t secret-share:test .
+          docker run --rm secret-share:test
+
+      - name: Test de démarrage
+        run: |
+          docker build --target production -t secret-share:ci .
+          docker run -d --name smoke -p 8080:8080 \
+            -e APP_SECRET="$(openssl rand -base64 48)" -e APP_URL=http://localhost:8080 \
+            --read-only --tmpfs /tmp --tmpfs /var/run/apache2:uid=33,gid=33 \
+            --tmpfs /var/lock/apache2:uid=33,gid=33 --cap-drop ALL secret-share:ci
+          for i in $(seq 1 20); do curl -fsS http://localhost:8080/health && break; sleep 1; done
+          curl -fsS http://localhost:8080/ | grep -q 'name="secret"'
+          docker rm -f smoke
+
+      - name: Le conteneur refuse de démarrer sans APP_SECRET
+        run: |
+          if docker run --rm -e APP_URL=http://localhost secret-share:ci true; then
+            echo "Le conteneur aurait dû refuser de démarrer" && exit 1
+          fi
+
+      - name: Métadonnées
+        id: meta
+        if: github.event_name == 'push'
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ vars.DOCKERHUB_IMAGE || 'ludeus/secret-share' }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=edge,branch=main
+
+      - name: Connexion à Docker Hub
+        if: github.event_name == 'push'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Publication
+        if: github.event_name == 'push'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: production
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}

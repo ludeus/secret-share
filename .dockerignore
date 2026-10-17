@@ -1,0 +1,17 @@
+.env
+.git
+.github
+.idea
+.vscode
+.phpunit.cache
+.phpstan.cache
+vendor
+data
+coverage
+*.sqlite
+*.sqlite-journal
+docker-compose.yml
+install.sh
+docs
+*.md
+!README.md

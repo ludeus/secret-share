@@ -1,0 +1,19 @@
+# Configuration locale (contient APP_SECRET)
+.env
+
+# Dépendances et caches
+/vendor/
+/.phpunit.cache/
+/.phpstan.cache/
+/.phpcs-cache
+/coverage/
+
+# Données
+/data/
+*.sqlite
+*.sqlite-journal
+
+# Éditeurs et système
+/.idea/
+/.vscode/
+.DS_Store

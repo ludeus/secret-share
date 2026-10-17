@@ -1,0 +1,91 @@
+# syntax=docker/dockerfile:1
+#
+# Secret Share - image Docker
+#
+#   docker build -t secret-share .                 # image de production
+#   docker build --target test -t secret-share:test .  # image avec outils de test
+
+ARG PHP_VERSION=8.3
+
+# ---------------------------------------------------------------------------
+# Dépendances Composer (sans les outils de développement)
+# ---------------------------------------------------------------------------
+FROM composer:2 AS vendor
+WORKDIR /app
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --no-interaction --no-progress --prefer-dist --no-autoloader --no-scripts
+COPY src/ src/
+RUN composer dump-autoload --no-dev --classmap-authoritative
+
+# dépendances de développement, pour la cible « test »
+FROM composer:2 AS vendor-dev
+WORKDIR /app
+COPY composer.json composer.lock ./
+RUN composer install --no-interaction --no-progress --prefer-dist --no-scripts
+
+# ---------------------------------------------------------------------------
+# Base : Apache + PHP, durcis
+# ---------------------------------------------------------------------------
+FROM php:${PHP_VERSION}-apache AS base
+
+# opcache pour les performances ; sodium et pdo_sqlite sont fournis par l'image officielle
+RUN docker-php-ext-install -j"$(nproc)" opcache \
+    && a2enmod headers \
+    && a2dismod -f autoindex status negotiation \
+    && rm -f /etc/apache2/sites-enabled/*.conf /etc/apache2/conf-enabled/other-vhosts-access-log.conf \
+    && mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
+
+COPY docker/apache/ports.conf /etc/apache2/ports.conf
+COPY docker/apache/secret-share.conf /etc/apache2/sites-enabled/secret-share.conf
+COPY docker/php/secret-share.ini "$PHP_INI_DIR/conf.d/zz-secret-share.ini"
+COPY docker/entrypoint.sh /usr/local/bin/secret-share-entrypoint
+
+# le serveur tourne sans privilèges : il n'écrit que dans /app/data et les dossiers d'exécution d'Apache
+RUN mkdir -p /app/data \
+    && chown -R www-data:www-data /app/data /var/run/apache2 /var/lock/apache2 /var/log/apache2 \
+    && chmod 0700 /app/data
+
+WORKDIR /app
+ENV DATABASE_PATH=/app/data/secret-share.sqlite
+
+EXPOSE 8080
+VOLUME ["/app/data"]
+STOPSIGNAL SIGWINCH
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -fsS http://127.0.0.1:8080/health || exit 1
+
+ENTRYPOINT ["secret-share-entrypoint"]
+CMD ["apache2-foreground"]
+
+# ---------------------------------------------------------------------------
+# Test : dépendances de développement, pour lancer « composer check » en CI
+# ---------------------------------------------------------------------------
+FROM base AS test
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+COPY --chown=www-data:www-data . .
+COPY --chown=www-data:www-data --from=vendor-dev /app/vendor/ vendor/
+RUN chown www-data:www-data /app
+USER www-data
+RUN composer dump-autoload
+ENTRYPOINT []
+CMD ["composer", "check"]
+
+# ---------------------------------------------------------------------------
+# Production (cible par défaut)
+# ---------------------------------------------------------------------------
+FROM base AS production
+
+LABEL org.opencontainers.image.title="Secret Share" \
+      org.opencontainers.image.description="Partage de secrets éphémères et chiffrés via un lien ou un QR code" \
+      org.opencontainers.image.licenses="AGPL-3.0-or-later" \
+      org.opencontainers.image.source="https://github.com/ludeus/secret-share"
+
+COPY --from=vendor /app/vendor/ vendor/
+COPY bin/ bin/
+COPY lang/ lang/
+COPY public/ public/
+COPY src/ src/
+COPY templates/ templates/
+COPY LICENSE composer.json ./
+
+USER www-data

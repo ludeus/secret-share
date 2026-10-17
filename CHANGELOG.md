@@ -11,6 +11,11 @@ respecte le [versionnage sémantique](https://semver.org/lang/fr/).
 - Corrections signalées par l'analyse de PhpStorm : imports explicites, annotations `@throws`
   et types des gabarits.
 
+### Documentation
+
+- README à jour : protection contre les abus, mise à jour d'une installation, langues
+  disponibles, variables `QOS_*`, scripts de `bin/`, limites connues, capture d'écran.
+
 ## [1.2.1] - 2026-10-17
 
 ### Modifications

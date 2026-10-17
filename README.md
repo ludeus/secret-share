@@ -10,7 +10,9 @@ Partagez un mot de passe, une clé d'API ou toute information sensible au moyen 
 - **Sans trace** : le jeton voyage dans le fragment de l'URL (`#…`), jamais envoyé
   au serveur, donc absent de tous les journaux HTTP ; aucune IP, date de création
   ou métadonnée n'est conservée
-- Interface sobre, responsive, accessible, thème clair/sombre automatique, en 9 langues
+- **Protection contre les abus** : limitation de débit par visiteur sans stocker d'adresse IP,
+  quotas de stockage, ressources bornées ; déblocage manuel par `./unblock.sh`
+- Interface sobre, responsive, accessible, thème clair/sombre automatique, en **9 langues**
   (dont l'arabe, écrit de droite à gauche) avec sélecteur de langue
 - Image Docker durcie : utilisateur non privilégié, système de fichiers en lecture seule
 
@@ -50,6 +52,19 @@ docker run -d --name secret-share \
 
 Conservez la valeur d'`APP_SECRET` : la changer rend illisibles tous les secrets en cours.
 
+### Mise à jour
+
+```bash
+git pull                      # scripts et docker-compose.yml à jour
+docker compose pull           # nouvelle image (IMAGE dans .env, par ex. ludeus/secret-share:1.2.2)
+docker compose up -d
+```
+
+Le schéma de la base est mis à jour automatiquement au démarrage et les secrets en cours sont
+conservés. Les nouvelles variables de `.env.dist` ont toutes une valeur par défaut. Les
+fichiers statiques étant versionnés par leur date de modification, les navigateurs
+rechargent d'eux-mêmes ceux qui ont changé.
+
 ## Configuration
 
 Toute la configuration se fait par variables d'environnement (fichier `.env` avec Compose).
@@ -71,6 +86,8 @@ Une valeur invalide empêche le conteneur de démarrer, avec un message explicit
 | `RATE_LIMIT_CREATE_PER_HOUR`   | `30`             | Créations par visiteur et par heure (`0` : pas de limite)                |
 | `RATE_LIMIT_READ_PER_MINUTE`   | `30`             | Ouvertures et destructions par visiteur et par minute                    |
 | `TRUSTED_PROXIES`       | plages privées          | Proxys dont l'en-tête `X-Forwarded-For` est pris en compte               |
+| `QOS_CONSOLE_URL`       | *(vide)*                | Console `mod_qos` locale, utilisée par `./unblock.sh` (facultatif)       |
+| `QOS_EVENT`             | `SECRET_SHARE`          | Variable d'évènement comptée par `mod_qos`                               |
 | `DEFAULT_LOCALE`        | `fr`                    | Langue si le navigateur n'en propose aucune disponible (code de `lang/`) |
 | `SOURCE_URL`            | lien GitHub du projet   | Lien « Code source » du pied de page (exigé par l'AGPL)                  |
 | `DATABASE_PATH`         | `/app/data/secret-share.sqlite` | Emplacement de la base SQLite                                    |
@@ -225,6 +242,10 @@ Listen 127.0.0.1:8766
   son lien de destruction.
 - Le lien d'un secret en mode JWT est long ; pour un QR code plus simple à scanner, cochez
   « URL courte ».
+- La limitation de débit s'applique par adresse IP : des visiteurs derrière une même adresse
+  (entreprise, NAT) partagent les mêmes compteurs.
+- Windows n'affiche pas les émojis de drapeaux : le sélecteur montre alors deux lettres
+  (« FR ») devant le nom de chaque langue.
 
 Pour signaler une vulnérabilité, voir [SECURITY.md](SECURITY.md).
 
@@ -238,6 +259,7 @@ composer test        # tests unitaires et fonctionnels (PHPUnit)
 composer cs-check    # standard de codage (PSR-12)
 composer cs-fix      # correction automatique du standard
 composer stan        # analyse statique (PHPStan, niveau max)
+composer translations # vérification des fichiers de langue
 composer check       # tout ce qui précède, comme en CI
 
 # serveur de développement
@@ -253,9 +275,18 @@ docker build --target test -t secret-share:test . && docker run --rm secret-shar
 
 ### Traductions
 
-La langue est choisie par le sélecteur de l'interface (mémorisé dans un cookie), sinon d'après
-les préférences du navigateur, sinon `DEFAULT_LOCALE`. Chaque fichier `lang/<code>.php` est une
-langue : en ajouter une se résume à déposer un fichier, voir [CONTRIBUTING.md](CONTRIBUTING.md).
+L'interface est disponible en 🇬🇧 anglais, 🇨🇳 chinois (simplifié), 🇮🇳 hindi, 🇪🇸 espagnol,
+🇫🇷 français, 🇸🇦 arabe, 🇵🇹 portugais, 🇷🇺 russe et 🇩🇪 allemand. Seuls le français et
+l'anglais ont été relus par des locuteurs natifs : les corrections sont les bienvenues.
+
+La langue est choisie par le sélecteur de l'interface (mémorisé un an dans un cookie), sinon
+d'après les préférences du navigateur, sinon `DEFAULT_LOCALE`. Le sélecteur n'est proposé que
+sur les pages qui peuvent être rechargées sans perte (pas sur l'affichage d'un lien créé ou
+d'un secret révélé) ; sur la page d'ouverture d'un secret, il conserve le jeton du lien.
+
+Chaque fichier `lang/<code>.php` est une langue, détectée automatiquement ; les textes non
+traduits s'affichent en anglais. En ajouter une se résume à déposer un fichier, voir
+[CONTRIBUTING.md](CONTRIBUTING.md).
 
 ```bash
 composer translations    # état de toutes les langues (textes manquants, paramètres)
@@ -274,8 +305,14 @@ src/
 └── View/                gabarits, traductions, QR codes
 templates/               gabarits PHP (échappement systématique)
 lang/                    traductions, une langue par fichier
-public/                  point d'entrée et ressources statiques
+public/                  point d'entrée et ressources statiques (versionnées par date de modification)
+bin/
+├── install              vérifie la configuration et initialise la base (démarrage du conteneur)
+├── unblock              gestion des compteurs de limitation de débit (appelé par ./unblock.sh)
+└── check-translations   vérification des fichiers de langue
 docker/                  configuration Apache, PHP et point d'entrée du conteneur
+install.sh               création de .env avec une clé APP_SECRET aléatoire
+unblock.sh               déblocage d'adresses IP (root ou groupe docker)
 ```
 
 ### Publication

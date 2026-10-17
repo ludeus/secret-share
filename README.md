@@ -40,6 +40,17 @@ docker compose up -d
 `APP_SECRET` aléatoire. La base SQLite est créée automatiquement au premier démarrage, dans
 le volume Docker `data`.
 
+| Option            | Effet                                                                          |
+|-------------------|--------------------------------------------------------------------------------|
+| `--url URL`       | URL publique (`APP_URL`) ; par défaut `http://localhost:<port>`                |
+| `--port PORT`     | port d'écoute sur l'hôte (`APP_PORT`, `8765` par défaut)                       |
+| `--bind ADRESSE`  | adresse d'écoute sur l'hôte (`APP_BIND`, `127.0.0.1` par défaut)               |
+| `--start`         | démarre les conteneurs (`docker compose up -d`) une fois `.env` créé           |
+| `--force`         | recrée `.env` même s'il existe déjà                                            |
+
+Sans `--force`, un `.env` contenant déjà une clé n'est jamais modifié. `--force` génère une
+**nouvelle** clé `APP_SECRET` : tous les secrets en cours deviennent alors illisibles.
+
 L'application écoute alors sur `127.0.0.1:8765`, à placer derrière un reverse proxy HTTPS
 (voir plus bas).
 
@@ -129,6 +140,28 @@ location / {
     proxy_set_header X-Forwarded-Proto $scheme;
 }
 ```
+
+### Scripts d'exploitation
+
+Les scripts `.sh` de la racine s'exécutent **sur l'hôte** et pilotent Docker ; les commandes
+de `bin/` (sans extension) sont des scripts PHP exécutés **dans le conteneur**, copiés dans
+l'image.
+
+| Script hôte        | Rôle                                                   | Droits                      |
+|--------------------|--------------------------------------------------------|-----------------------------|
+| `install.sh`       | création de `.env` (voir « Démarrage rapide »)         | utilisateur courant         |
+| `unblock.sh`       | déblocage d'adresses IP, s'appuie sur `bin/unblock`    | root ou groupe `docker`     |
+| `check-token.sh`   | diagnostic d'un lien de partage                        | root ou groupe `docker`     |
+
+| Commande du conteneur   | Rôle                                                                      |
+|-------------------------|---------------------------------------------------------------------------|
+| `bin/install`           | vérifie la configuration et initialise la base, lancée à chaque démarrage |
+| `bin/unblock`           | compteurs de limitation de débit de l'application                         |
+| `bin/check-translations`| vérification des fichiers de langue                                       |
+
+Les commandes du conteneur peuvent aussi être lancées directement, par exemple
+`docker compose exec app php bin/unblock --status 203.0.113.7` ; contrairement à
+`./unblock.sh`, `bin/unblock` n'agit que sur l'application, pas sur `mod_qos`.
 
 ### Débloquer une adresse
 
@@ -308,7 +341,8 @@ traduits s'affichent en anglais. En ajouter une se résume à déposer un fichie
 [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ```bash
-composer translations    # état de toutes les langues (textes manquants, paramètres)
+composer translations              # état de toutes les langues (textes manquants, paramètres)
+php bin/check-translations es      # une seule langue
 ```
 
 ### Organisation du code
@@ -326,15 +360,15 @@ templates/               gabarits PHP (échappement systématique)
 lang/                    traductions, une langue par fichier
 public/                  point d'entrée et ressources statiques (versionnées par date de modification)
 bin/
-├── install              vérifie la configuration et initialise la base (démarrage du conteneur)
-├── unblock              gestion des compteurs de limitation de débit (appelé par ./unblock.sh)
-└── check-translations   vérification des fichiers de langue
+├── install              (conteneur) vérifie la configuration et initialise la base au démarrage
+├── unblock              (conteneur) compteurs de limitation de débit, appelé par ./unblock.sh
+└── check-translations   vérification des fichiers de langue (conteneur ou poste de développement)
 docker/                  configuration Apache, PHP et point d'entrée du conteneur
 maintenance/             maintenance mensuelle automatisée et son timer systemd
 tests/e2e/               tests fonctionnels dans un navigateur
-install.sh               création de .env avec une clé APP_SECRET aléatoire
-unblock.sh               déblocage d'adresses IP (root ou groupe docker)
-check-token.sh           diagnostic d'un lien de partage (root ou groupe docker)
+install.sh               (hôte) création de .env avec une clé APP_SECRET aléatoire
+unblock.sh               (hôte) déblocage d'adresses IP (root ou groupe docker)
+check-token.sh           (hôte) diagnostic d'un lien de partage (root ou groupe docker)
 ```
 
 ### Tests fonctionnels

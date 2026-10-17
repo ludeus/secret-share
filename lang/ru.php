@@ -11,6 +11,7 @@ declare(strict_types=1);
 return [
     'lang.name' => 'Русский',
     'lang.dir' => 'ltr',
+    'lang.flag' => '🇷🇺',
 
     'app.name' => 'Secret Share',
     'app.tagline' => 'Делитесь паролями и конфиденциальными данными с помощью одноразовой зашифрованной ссылки.',

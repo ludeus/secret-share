@@ -11,6 +11,7 @@ declare(strict_types=1);
 return [
     'lang.name' => 'Deutsch',
     'lang.dir' => 'ltr',
+    'lang.flag' => '🇩🇪',
 
     'app.name' => 'Secret Share',
     'app.tagline' => 'Teilen Sie Passwörter und vertrauliche Daten über einen kurzlebigen, verschlüsselten Link.',

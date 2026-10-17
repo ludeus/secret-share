@@ -25,7 +25,19 @@ final readonly class View
         private string $directory,
         private Translator $translator,
         private array $globals = [],
+        private string $publicDirectory = '',
     ) {
+    }
+
+    /**
+     * URL d'un fichier statique, suffixée de sa date de modification : le
+     * navigateur peut le garder en cache et le recharge dès qu'il change
+     */
+    public function asset(string $path): string
+    {
+        $mtime = @filemtime($this->publicDirectory . '/' . $path);
+        $url = '/' . ltrim($path, '/');
+        return $this->e($mtime === false ? $url : $url . '?v=' . $mtime);
     }
 
     /**

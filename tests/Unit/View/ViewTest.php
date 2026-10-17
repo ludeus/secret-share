@@ -42,6 +42,23 @@ final class ViewTest extends TestCase
         );
     }
 
+    public function testAssetUrlContainsModificationTime(): void
+    {
+        $directory = sys_get_temp_dir() . '/secret-share-assets-' . bin2hex(random_bytes(4));
+        mkdir($directory);
+        file_put_contents($directory . '/app.css', 'body {}');
+        touch($directory . '/app.css', 1_700_000_000);
+        try {
+            $view = new View('/nonexistent', new Translator('fr', []), publicDirectory: $directory);
+
+            $this->assertSame('/app.css?v=1700000000', $view->asset('app.css'));
+            $this->assertSame('/missing.js', $view->asset('missing.js'));
+        } finally {
+            unlink($directory . '/app.css');
+            rmdir($directory);
+        }
+    }
+
     public function testMissingTemplateThrows(): void
     {
         $view = new View('/nonexistent', new Translator('fr', []));

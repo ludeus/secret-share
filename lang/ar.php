@@ -11,6 +11,7 @@ declare(strict_types=1);
 return [
     'lang.name' => 'العربية',
     'lang.dir' => 'rtl',
+    'lang.flag' => '🇸🇦',
 
     'app.name' => 'Secret Share',
     'app.tagline' => 'شارك كلمات المرور والبيانات الحساسة عبر رابط مؤقت ومشفّر.',

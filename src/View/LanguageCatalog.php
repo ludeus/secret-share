@@ -51,6 +51,20 @@ final class LanguageCatalog
         return $this->languages;
     }
 
+    /**
+     * Libellés du sélecteur de langue : drapeau puis nom natif (« 🇫🇷 Français »)
+     *
+     * @return array<string, string>
+     */
+    public function labels(): array
+    {
+        $labels = [];
+        foreach ($this->languages() as $code => $name) {
+            $labels[$code] = trim(($this->messages($code)['lang.flag'] ?? '') . ' ' . $name);
+        }
+        return $labels;
+    }
+
     public function has(string $code): bool
     {
         return self::isValidCode($code) && is_file($this->file($code));

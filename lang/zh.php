@@ -11,6 +11,7 @@ declare(strict_types=1);
 return [
     'lang.name' => '中文',
     'lang.dir' => 'ltr',
+    'lang.flag' => '🇨🇳',
 
     'app.name' => 'Secret Share',
     'app.tagline' => '通过一次性加密链接分享密码和敏感信息。',

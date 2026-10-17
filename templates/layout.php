@@ -7,7 +7,7 @@
  * @var string                  $content
  * @var string                  $sourceUrl
  * @var string                  $version
- * @var array<string, string>   $languages
+ * @var array<string, string>   $languages libellés (drapeau et nom) par code de langue
  * @var bool                    $showLanguageSelector
  * @var string                  $currentPath
  */
@@ -25,9 +25,9 @@
     <meta name="referrer" content="no-referrer">
     <meta name="description" content="<?= $this->t('app.tagline') ?>">
     <title><?= $this->t('app.name') ?></title>
-    <link rel="icon" href="/assets/favicon.svg?v=<?= $this->e($version) ?>" type="image/svg+xml">
-    <link rel="stylesheet" href="/assets/app.css?v=<?= $this->e($version) ?>">
-    <script src="/assets/app.js?v=<?= $this->e($version) ?>" defer></script>
+    <link rel="icon" href="<?= $this->asset('assets/favicon.svg') ?>" type="image/svg+xml">
+    <link rel="stylesheet" href="<?= $this->asset('assets/app.css') ?>">
+    <script src="<?= $this->asset('assets/app.js') ?>" defer></script>
 </head>
 <body>
     <a class="skip-link" href="#main"><?= $this->t('app.skip_to_content') ?></a>

@@ -104,8 +104,13 @@ final class AppTest extends TestCase
 
         $this->assertStringContainsString('<html lang="es" dir="ltr">', $response->body);
         $this->assertStringContainsString('Compartir un secreto', $response->body);
-        $this->assertMatchesRegularExpression('/<option value="zh" lang="zh"\s*>中文<\/option>/', $response->body);
-        $this->assertMatchesRegularExpression('/<option value="es" lang="es"\s*selected>Español/', $response->body);
+        $this->assertMatchesRegularExpression('/<option value="zh" lang="zh"\s*>🇨🇳 中文<\/option>/u', $response->body);
+        $this->assertMatchesRegularExpression(
+            '/<option value="es" lang="es"\s*selected>🇪🇸 Español/u',
+            $response->body
+        );
+        // version des fichiers statiques : date de modification
+        $this->assertMatchesRegularExpression('#href="/assets/app\.css\?v=\d+"#', $response->body);
     }
 
     public function testLanguageChosenInUrlIsRemembered(): void

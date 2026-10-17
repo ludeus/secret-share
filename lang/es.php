@@ -11,6 +11,7 @@ declare(strict_types=1);
 return [
     'lang.name' => 'Español',
     'lang.dir' => 'ltr',
+    'lang.flag' => '🇪🇸',
 
     'app.name' => 'Secret Share',
     'app.tagline' => 'Comparte contraseñas y datos sensibles mediante un enlace efímero y cifrado.',

@@ -4,6 +4,14 @@ Toutes les évolutions notables sont consignées ici.
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le projet
 respecte le [versionnage sémantique](https://semver.org/lang/fr/).
 
+## [1.2.1] - 2026-10-17
+
+### Modifications
+
+- Les fichiers statiques sont versionnés par leur date de modification : le cache du navigateur
+  est renouvelé dès qu'un fichier change.
+- Drapeau devant chaque langue du sélecteur (clé `lang.flag` des fichiers de langue).
+
 ## [1.2.0] - 2026-10-17
 
 ### Ajouts

@@ -11,6 +11,7 @@ declare(strict_types=1);
 return [
     'lang.name' => 'हिन्दी',
     'lang.dir' => 'ltr',
+    'lang.flag' => '🇮🇳',
 
     'app.name' => 'Secret Share',
     'app.tagline' => 'पासवर्ड और संवेदनशील जानकारी को एक अस्थायी, एन्क्रिप्टेड लिंक के ज़रिए साझा करें।',

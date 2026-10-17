@@ -19,7 +19,7 @@ final readonly class TranslationChecker
     /**
      * Clés obligatoires dans chaque fichier de langue
      */
-    public const array REQUIRED_KEYS = ['lang.name', 'lang.dir'];
+    public const array REQUIRED_KEYS = ['lang.name', 'lang.dir', 'lang.flag'];
 
     public function __construct(private LanguageCatalog $catalog)
     {

@@ -58,7 +58,7 @@ use SecretShare\View\View;
  */
 final readonly class App
 {
-    public const string VERSION = '1.2.0';
+    public const string VERSION = '1.2.1';
     public const string SHARE_PATH = '/s';
     public const string REVOKE_PATH = '/r';
     public const string LANGUAGE_COOKIE = 'lang';
@@ -136,11 +136,12 @@ final readonly class App
             [
                 'sourceUrl' => $this->config->sourceUrl,
                 'version' => self::VERSION,
-                'languages' => $this->languages->languages(),
+                'languages' => $this->languages->labels(),
                 // le sélecteur recharge la page : il n'est proposé que sur les pages consultables en GET
                 'showLanguageSelector' => $request->method === 'GET',
                 'currentPath' => $request->path,
-            ]
+            ],
+            self::ROOT_DIR . '/public'
         );
         $csrf = new Csrf($this->config->isHttps());
         $csrfToken = $csrf->token($request);

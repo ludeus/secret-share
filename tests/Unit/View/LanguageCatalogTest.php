@@ -23,7 +23,16 @@ final class LanguageCatalogTest extends TestCase
     {
         $this->directory = sys_get_temp_dir() . '/secret-share-lang-' . bin2hex(random_bytes(4));
         mkdir($this->directory);
-        $this->write('en', ['lang.name' => 'English', 'lang.dir' => 'ltr', 'hello' => 'Hello {name}', 'bye' => 'Bye']);
+        $this->write(
+            'en',
+            [
+                'lang.name' => 'English',
+                'lang.dir' => 'ltr',
+                'lang.flag' => '🇬🇧',
+                'hello' => 'Hello {name}',
+                'bye' => 'Bye',
+            ]
+        );
         $this->write('xx', ['lang.name' => 'Xish', 'lang.dir' => 'rtl', 'hello' => 'Xello {name}']);
         file_put_contents($this->directory . '/README.txt', 'ignoré');
         file_put_contents($this->directory . '/Invalid.php', '<?php return [];');
@@ -48,6 +57,7 @@ final class LanguageCatalogTest extends TestCase
         $catalog = new LanguageCatalog($this->directory);
 
         $this->assertSame(['en' => 'English', 'xx' => 'Xish'], $catalog->languages());
+        $this->assertSame(['en' => '🇬🇧 English', 'xx' => 'Xish'], $catalog->labels());
         $this->assertTrue($catalog->has('xx'));
         $this->assertFalse($catalog->has('zz'));
         $this->assertFalse($catalog->has('../en'));
@@ -69,6 +79,7 @@ final class LanguageCatalogTest extends TestCase
 
         $this->assertSame(
             [
+                'clé obligatoire absente : lang.flag',
                 'lang.dir doit valoir « ltr » ou « rtl »',
                 'paramètres différents pour hello : attendu name',
                 'texte manquant : bye',

@@ -19,9 +19,10 @@ ISO 639-1 de la langue (`es.php`, `zh.php`…). L'anglais (`lang/en.php`) est la
 tout texte absent d'une traduction s'y affiche en anglais.
 
 1. Copiez `lang/en.php` vers `lang/<code>.php`.
-2. Renseignez les deux clés d'identification :
+2. Renseignez les trois clés d'identification :
    - `lang.name` : le nom de la langue dans cette langue (« Español », « 中文 »), affiché dans
      le sélecteur ;
+   - `lang.flag` : l'émoji du drapeau affiché devant ce nom (« 🇪🇸 ») ;
    - `lang.dir` : `ltr`, ou `rtl` pour les langues écrites de droite à gauche (arabe, hébreu…).
 3. Traduisez les autres textes en conservant les paramètres entre accolades (`{count}`,
    `{max}`), qui sont remplacés par des valeurs à l'affichage.

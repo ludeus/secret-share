@@ -16,6 +16,7 @@ coverage
 docker-compose.yml
 install.sh
 unblock.sh
+check-token.sh
 docs
 *.md
 !README.md

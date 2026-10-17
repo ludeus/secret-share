@@ -41,7 +41,7 @@ jobs:
         run: composer test
 
       - name: Shellcheck
-        run: shellcheck install.sh unblock.sh docker/entrypoint.sh maintenance/monthly.sh maintenance/systemd/install.sh
+        run: shellcheck install.sh unblock.sh check-token.sh docker/entrypoint.sh maintenance/monthly.sh maintenance/systemd/install.sh
 
       - name: Vulnérabilités des dépendances (Trivy)
         uses: aquasecurity/trivy-action@v0.36.0

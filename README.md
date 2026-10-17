@@ -140,6 +140,17 @@ de l'application (dans le conteneur) et, si `QOS_CONSOLE_URL` est renseigné dan
 ceux de `mod_qos` (voir plus bas). L'application ne conservant que des empreintes, il n'est
 pas possible de lister les adresses bloquées : il faut connaître l'adresse à débloquer.
 
+### Diagnostiquer un lien
+
+```bash
+./check-token.sh 'https://secret.example.org/s#eyJ0eXAi…'   # lien complet ou jeton seul
+```
+
+Indique si le jeton est authentique (signature JWT), s'il est expiré et si le secret est
+encore consommable (présent en base, non expiré, essais de mot de passe restants), avec le
+code de retour `0` s'il l'est, `1` sinon. Le secret n'est ni déchiffré ni consommé. Réservé à
+root et aux membres du groupe `docker`.
+
 ### Protection contre les abus
 
 - **Limitation de débit par visiteur** : créations (5 par minute, 30 par heure) et ouvertures
@@ -317,6 +328,7 @@ maintenance/             maintenance mensuelle automatisée et son timer systemd
 tests/e2e/               tests fonctionnels dans un navigateur
 install.sh               création de .env avec une clé APP_SECRET aléatoire
 unblock.sh               déblocage d'adresses IP (root ou groupe docker)
+check-token.sh           diagnostic d'un lien de partage (root ou groupe docker)
 ```
 
 ### Tests fonctionnels

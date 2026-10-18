@@ -35,6 +35,25 @@ final class ViewTest extends TestCase
         $this->assertSame('&lt;b&gt;&lt;i&gt;&lt;/b&gt;', $view->t('key', ['x' => '<i>']));
     }
 
+    public function testClientTranslationMetadataIsEscaped(): void
+    {
+        $view = new View('/nonexistent', new Translator('fr', ['key' => 'Valeur : {value}']));
+        $value = '"><script>alert(1)</script>';
+
+        $metadata = $view->message('key', ['value' => $value]);
+
+        $this->assertStringNotContainsString('<script>', $metadata);
+        $this->assertStringNotContainsString('"', $metadata);
+        $this->assertSame(
+            ['key', ['value' => $value]],
+            json_decode(htmlspecialchars_decode($metadata, ENT_QUOTES), true, flags: JSON_THROW_ON_ERROR)
+        );
+        $this->assertSame(
+            '<span data-i18n="' . $metadata . '">Valeur : ' . $view->e($value) . '</span>',
+            $view->text('key', ['value' => $value])
+        );
+    }
+
     public function testTime(): void
     {
         $view = new View('/nonexistent', new Translator('fr', []));

@@ -148,6 +148,22 @@ final class AppTest extends TestCase
     /**
      * @throws Throwable
      */
+    public function testTranslationDictionaryUsesTheChosenLocale(): void
+    {
+        $response = $this->app->handle(new Request('GET', '/translations', query: ['lang' => 'es']));
+        $messages = json_decode($response->body, true, flags: JSON_THROW_ON_ERROR);
+
+        $this->assertSame(200, $response->status);
+        $this->assertSame('application/json; charset=UTF-8', $response->headers['Content-Type']);
+        $this->assertIsArray($messages);
+        $this->assertSame('Español', $messages['lang.name']);
+        $this->assertArrayHasKey('home.title', $messages);
+        $this->assertContains('lang=es; Path=/; Max-Age=31536000; SameSite=Lax; Secure', $response->cookies);
+    }
+
+    /**
+     * @throws Throwable
+     */
     public function testUnknownLanguageIsIgnored(): void
     {
         $response = $this->app->handle(
@@ -167,12 +183,12 @@ final class AppTest extends TestCase
     /**
      * @throws Throwable
      */
-    public function testNoLanguageSelectorOnResultPages(): void
+    public function testLanguageSelectorOnResultPages(): void
     {
         $response = $this->post('/', ['secret' => 'x', 'duration' => '1h', 'single_use' => '1']);
 
         $this->assertSame(201, $response->status);
-        $this->assertStringNotContainsString('data-lang-switch', $response->body);
+        $this->assertStringContainsString('data-lang-switch', $response->body);
         $this->assertStringContainsString('data-lang-switch', $this->get('/')->body);
     }
 

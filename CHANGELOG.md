@@ -4,6 +4,17 @@ Toutes les évolutions notables sont consignées ici.
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le projet
 respecte le [versionnage sémantique](https://semver.org/lang/fr/).
 
+## [1.5.0] - 2026-10-18
+
+### Ajouts
+- Sélecteur de thème automatique, clair ou sombre, avec mémorisation du choix.
+- Menu compact avec icônes SVG et positionnement adapté aux petits écrans.
+- Changement de langue en JavaScript sur toutes les pages, sans perte des saisies, liens ou secrets.
+- Surcharge Docker Compose pour modifier le code local sans reconstruire l'image.
+
+### Documentation
+- Captures d'écran du README actualisées.
+
 ## [1.4.0] - 2026-10-17
 
 ### Maintenance

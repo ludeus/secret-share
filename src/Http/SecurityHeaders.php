@@ -18,7 +18,7 @@ use SecretShare\Config;
 final class SecurityHeaders
 {
     private const string CONTENT_SECURITY_POLICY = "default-src 'none'; script-src 'self'; style-src 'self'; "
-        . "img-src 'self' data:; form-action 'self'; frame-ancestors 'none'; base-uri 'none'";
+        . "connect-src 'self'; img-src 'self' data:; form-action 'self'; frame-ancestors 'none'; base-uri 'none'";
 
     public static function apply(Response $response, Config $config): Response
     {

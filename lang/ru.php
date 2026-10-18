@@ -19,6 +19,10 @@ return [
     'app.source_code' => 'Исходный код',
     'app.skip_to_content' => 'Перейти к содержимому',
     'app.language' => 'Язык',
+    'app.theme' => 'Тема',
+    'app.theme_auto' => 'Автоматически',
+    'app.theme_light' => 'Светлая',
+    'app.theme_dark' => 'Тёмная',
 
     'common.yes' => 'Да',
     'common.no' => 'Нет',

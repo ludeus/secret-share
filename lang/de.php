@@ -19,6 +19,10 @@ return [
     'app.source_code' => 'Quellcode',
     'app.skip_to_content' => 'Zum Inhalt springen',
     'app.language' => 'Sprache',
+    'app.theme' => 'Design',
+    'app.theme_auto' => 'Automatisch',
+    'app.theme_light' => 'Hell',
+    'app.theme_dark' => 'Dunkel',
 
     'common.yes' => 'Ja',
     'common.no' => 'Nein',

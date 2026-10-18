@@ -4,7 +4,8 @@
     "description": "Tests fonctionnels de bout en bout de Secret Share (Chrome piloté par Puppeteer)",
     "license": "AGPL-3.0-or-later",
     "scripts": {
-        "test": "node e2e.js"
+        "test": "node e2e.js",
+        "test:languages": "node languages.js"
     },
     "dependencies": {
         "puppeteer-core": "^25.14.0"

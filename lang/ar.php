@@ -19,6 +19,10 @@ return [
     'app.source_code' => 'الشيفرة المصدرية',
     'app.skip_to_content' => 'انتقل إلى المحتوى',
     'app.language' => 'اللغة',
+    'app.theme' => 'المظهر',
+    'app.theme_auto' => 'تلقائي',
+    'app.theme_light' => 'فاتح',
+    'app.theme_dark' => 'داكن',
 
     'common.yes' => 'نعم',
     'common.no' => 'لا',

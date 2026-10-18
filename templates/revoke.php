@@ -11,17 +11,17 @@ use SecretShare\View\View;
 
 ?>
 <section class="card">
-    <h1><?= $this->t('revoke.title') ?></h1>
-    <p class="lead"><?= $this->t('revoke.lead') ?></p>
+    <h1><?= $this->text('revoke.title') ?></h1>
+    <p class="lead"><?= $this->text('revoke.lead') ?></p>
 
     <noscript>
-        <div class="alert alert-error"><?= $this->t('reveal.noscript') ?></div>
+        <div class="alert alert-error"><?= $this->text('reveal.noscript') ?></div>
     </noscript>
-    <div class="alert alert-error" role="alert" data-missing-token hidden><?= $this->t('reveal.missing_token') ?></div>
+    <div class="alert alert-error" role="alert" data-missing-token hidden><?= $this->text('reveal.missing_token') ?></div>
 
     <form method="post" action="/r" class="form" data-fragment-form>
         <input type="hidden" name="csrf_token" value="<?= $this->e($csrfToken) ?>">
         <input type="hidden" name="token" value="" data-fragment-token>
-        <button type="submit" class="btn btn-danger btn-block"><?= $this->t('revoke.submit') ?></button>
+        <button type="submit" class="btn btn-danger btn-block"><?= $this->text('revoke.submit') ?></button>
     </form>
 </section>

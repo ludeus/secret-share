@@ -302,7 +302,24 @@ Pour signaler une vulnérabilité, voir [SECURITY.md](SECURITY.md).
 
 ## Développement
 
-Prérequis : PHP 8.5+ avec les extensions `sodium` et `pdo_sqlite`, Composer.
+Pour développer avec Docker, `docker-compose.override.yml` est chargé automatiquement :
+il monte le code local en lecture seule et désactive OPcache. Appliquer les montages
+une seule fois, sans reconstruire ni télécharger l'image :
+
+```bash
+docker compose up -d --no-build --pull never
+```
+
+Les modifications dans `public/`, `templates/`, `src/`, `lang/` et `bin/` sont
+visibles en rafraîchissant la page. Les dépendances Composer et la configuration de
+l'image nécessitent encore une reconstruction. Pour lancer uniquement l'image de
+production, sans cette surcharge locale :
+
+```bash
+docker compose -f docker-compose.yml up -d
+```
+
+Prérequis pour développer sans Docker : PHP 8.5+ avec les extensions `sodium` et `pdo_sqlite`, Composer.
 
 ```bash
 composer install
@@ -332,9 +349,11 @@ L'interface est disponible en 🇬🇧 anglais, 🇨🇳 chinois (simplifié), �
 l'anglais ont été relus par des locuteurs natifs : les corrections sont les bienvenues.
 
 La langue est choisie par le sélecteur de l'interface (mémorisé un an dans un cookie), sinon
-d'après les préférences du navigateur, sinon `DEFAULT_LOCALE`. Le sélecteur n'est proposé que
-sur les pages qui peuvent être rechargées sans perte (pas sur l'affichage d'un lien créé ou
-d'un secret révélé) ; sur la page d'ouverture d'un secret, il conserve le jeton du lien.
+d'après les préférences du navigateur, sinon `DEFAULT_LOCALE`. Le sélecteur reste disponible
+sur toutes les pages. JavaScript traduit l'interface sur place, sans rechargement ni renvoi
+de formulaire : les saisies, les liens créés, les secrets révélés et les jetons sont conservés.
+Sans JavaScript, le bouton de sélection de langue reste proposé sur les pages consultables
+en GET ; il est masqué sur les résultats pour éviter de perdre leur contenu.
 
 Chaque fichier `lang/<code>.php` est une langue, détectée automatiquement ; les textes non
 traduits s'affichent en anglais. En ajouter une se résume à déposer un fichier, voir
@@ -379,6 +398,9 @@ passe, URL courte, destruction, limites, langues, affichage mobile et sombre) :
 ```bash
 npm ci --prefix tests/e2e
 E2E_BASE_URL=http://127.0.0.1:8765 E2E_RATE_LIMIT_PAUSE=0 node tests/e2e/e2e.js
+
+# changement de langue sans rechargement (aucune capture de test générée)
+E2E_BASE_URL=http://127.0.0.1:8765 node tests/e2e/languages.js
 ```
 
 `E2E_RATE_LIMIT_PAUSE=0` suppose une instance sans limitation de débit

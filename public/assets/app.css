@@ -1,12 +1,12 @@
 /*
  * Secret Share - feuille de style
- * Thème clair/sombre automatique selon les préférences du système.
+ * Thème clair/sombre au choix ou selon les préférences du système.
  *
  * @license AGPL-3.0-or-later
  */
 
 :root {
-    color-scheme: light dark;
+    color-scheme: light;
 
     --bg: #f5f6f8;
     --surface: #ffffff;
@@ -36,8 +36,34 @@
     --font-mono: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace;
 }
 
+:root[data-theme="dark"] {
+    color-scheme: dark;
+        --bg: #0e1014;
+        --surface: #161920;
+        --surface-muted: #1d2129;
+        --text: #e7e9ee;
+        --text-muted: #9aa3b2;
+        --border: #2a2f3a;
+        --border-strong: #3a4150;
+        --accent: #7d93ff;
+        --accent-hover: #98a9ff;
+        --accent-soft: #1e2544;
+        --accent-contrast: #0e1014;
+        --danger: #ff7b6e;
+        --danger-hover: #ff978c;
+        --danger-soft: #3a1c1a;
+        --warning-soft: #2e2613;
+        --warning-border: #5c4a1c;
+        --warning-text: #f2d68b;
+        --info-soft: #172235;
+        --info-border: #27406a;
+        --focus: #98a9ff;
+        --shadow: 0 1px 2px rgb(0 0 0 / 30%), 0 8px 24px rgb(0 0 0 / 25%);
+}
+
 @media (prefers-color-scheme: dark) {
-    :root {
+    :root:not([data-theme]) {
+        color-scheme: dark;
         --bg: #0e1014;
         --surface: #161920;
         --surface-muted: #1d2129;
@@ -144,18 +170,21 @@ a:hover {
     gap: 1rem;
 }
 
+.header-controls {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.site-header {
+    flex-wrap: wrap;
+}
+
 .lang-switch {
     display: flex;
     align-items: center;
     gap: 0.4rem;
-}
-
-.lang-icon {
-    width: 1.1rem;
-    height: 1.1rem;
-    fill: none;
-    stroke: var(--text-muted);
-    stroke-width: 1.6;
 }
 
 .lang-switch select {
@@ -164,6 +193,96 @@ a:hover {
     padding-block: 0.3rem;
     font-size: 0.9rem;
 }
+
+
+.theme-switch {
+    position: relative;
+    flex: none;
+}
+
+.theme-switch svg {
+    width: 1.15rem;
+    height: 1.15rem;
+    flex: none;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.theme-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    min-height: 2.25rem;
+    padding: 0.3rem 0.55rem;
+    color: var(--text-muted);
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+}
+
+.theme-trigger .theme-caret {
+    width: 0.9rem;
+    height: 0.9rem;
+}
+
+.theme-trigger:hover,
+.theme-trigger[aria-expanded="true"] {
+    color: var(--accent);
+    border-color: var(--accent);
+}
+
+.theme-options {
+    position: absolute;
+    inset-inline-end: 0;
+    top: calc(100% + 0.4rem);
+    z-index: 20;
+    width: max-content;
+    min-width: 0;
+    max-width: calc(100vw - 1rem);
+    padding: 0.3rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow);
+}
+
+.theme-option {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    min-height: 2.5rem;
+    padding: 0.4rem 0.65rem;
+    width: 100%;
+    border: 0;
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    text-align: start;
+    border-radius: 5px;
+    font-size: 0.9rem;
+    font-weight: 400;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    cursor: pointer;
+}
+
+.theme-option span {
+    min-width: 0;
+}
+
+.theme-option:hover,
+.theme-option:focus-within,
+.theme-option[aria-pressed="true"] {
+    color: var(--accent);
+    background: var(--accent-soft);
+}
+
+
 
 .brand {
     display: inline-flex;
@@ -181,13 +300,11 @@ a:hover {
 }
 
 .brand-icon {
+    display: block;
     width: 1.75rem;
     height: 1.75rem;
-    color: var(--accent);
-}
-
-.brand-icon-hole {
-    fill: var(--bg);
+    flex: none;
+    object-fit: contain;
 }
 
 .site-footer {
@@ -483,19 +600,12 @@ select {
 
 .btn-danger {
     background: var(--danger);
-    color: #ffffff;
+    color: var(--accent-contrast);
 }
 
 .btn-danger:hover {
     background: var(--danger-hover);
-    color: #ffffff;
-}
-
-@media (prefers-color-scheme: dark) {
-    .btn-danger,
-    .btn-danger:hover {
-        color: #0e1014;
-    }
+    color: var(--accent-contrast);
 }
 
 .btn-ghost {

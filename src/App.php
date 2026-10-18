@@ -59,7 +59,7 @@ use Throwable;
  */
 final readonly class App
 {
-    public const string VERSION = '1.4.0';
+    public const string VERSION = '1.5.0';
     public const string SHARE_PATH = '/s';
     public const string REVOKE_PATH = '/r';
     public const string LANGUAGE_COOKIE = 'lang';
@@ -141,9 +141,8 @@ final readonly class App
                 'sourceUrl' => $this->config->sourceUrl,
                 'version' => self::VERSION,
                 'languages' => $this->languages->labels(),
-                // le sélecteur recharge la page : il n'est proposé que sur les pages consultables en GET
-                'showLanguageSelector' => $request->method === 'GET',
                 'currentPath' => $request->path,
+                'languageReloadSafe' => $request->method === 'GET',
             ],
             self::ROOT_DIR . '/public'
         );
@@ -162,6 +161,11 @@ final readonly class App
             $response = $this->error($view, 'error.csrf', 403, $csrfToken);
         } else {
             $response = match ($route) {
+                'GET /translations' => new Response(json_encode(
+                    $this->languages->messages($locale)
+                        + $this->languages->messages(LanguageCatalog::REFERENCE),
+                    JSON_THROW_ON_ERROR
+                )),
                 'GET /' => $this->home($view, $csrfToken),
                 'POST /' => $this->createSecret($view, $request, $csrfToken),
                 'GET ' . self::SHARE_PATH => $this->revealForm($view, $csrfToken),
@@ -172,7 +176,10 @@ final readonly class App
             };
         }
 
-        $response = $response->withHeader('Content-Type', 'text/html; charset=UTF-8');
+        $response = $response->withHeader(
+            'Content-Type',
+            $route === 'GET /translations' ? 'application/json; charset=UTF-8' : 'text/html; charset=UTF-8'
+        );
         $response = $csrf->attach($request, $response, $csrfToken);
         if ($localeChosen) {
             $response = $response->withCookie(

@@ -265,7 +265,10 @@ async function reveal(page, url, password = null) {
     console.log('11. Sélecteur de langue');
     const switcher = await newPage(browser);
     await switcher.goto(BASE + '/s?lang=fr#abc.def.ghi', {waitUntil: 'networkidle0'});
-    await Promise.all([switcher.waitForNavigation(), switcher.select('#lang-select', 'es')]);
+    await switcher.evaluate(() => { window.languageTestSentinel = true; });
+    await switcher.select('#lang-select', 'es');
+    await switcher.waitForFunction(() => document.documentElement.lang === 'es');
+    check('aucun rechargement après changement de langue', await switcher.evaluate(() => window.languageTestSentinel === true));
     check('page traduite après changement de langue', (await switcher.$eval('html', (e) => e.lang)) === 'es');
     check('jeton du lien conservé', (await switcher.$eval('[data-fragment-token]', (e) => e.value)) === 'abc.def.ghi');
     const ar = await newPage(browser);

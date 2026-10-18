@@ -11,6 +11,38 @@
     'use strict';
 
     var liveRegion = document.getElementById('live-region');
+    var activeMessages = null;
+
+    function translateMessage(metadata, fallback) {
+        var descriptor = JSON.parse(metadata);
+        var message = activeMessages && activeMessages[descriptor[0]];
+        if (typeof message !== 'string') {
+            return fallback;
+        }
+        Object.keys(descriptor[1]).forEach(function (name) {
+            message = message.split('{' + name + '}').join(String(descriptor[1][name]));
+        });
+        return message;
+    }
+
+    function applyTranslations(messages, locale) {
+        activeMessages = messages;
+        document.documentElement.lang = locale;
+        document.documentElement.dir = messages['lang.dir'] === 'rtl' ? 'rtl' : 'ltr';
+        document.querySelectorAll('[data-i18n]').forEach(function (element) {
+            element.textContent = translateMessage(element.dataset.i18n, element.textContent);
+        });
+        document.querySelectorAll('*').forEach(function (element) {
+            Array.from(element.attributes).forEach(function (attribute) {
+                if (attribute.name.indexOf('data-i18n-') === 0) {
+                    var target = attribute.name.slice('data-i18n-'.length);
+                    element.setAttribute(target, translateMessage(attribute.value, element.getAttribute(target)));
+                }
+            });
+        });
+        initLocalTimes();
+        document.dispatchEvent(new Event('languagechange'));
+    }
 
     /**
      * Annonce un message aux lecteurs d'écran
@@ -57,7 +89,17 @@
                 return;
             }
             var label = button.textContent.trim();
+            var labelNode = button.querySelector('[data-i18n]');
             var timer = null;
+            document.addEventListener('languagechange', function () {
+                if (labelNode) {
+                    label = translateMessage(labelNode.dataset.i18n, label);
+                    labelNode.textContent = label;
+                }
+                if (button.classList.contains('is-copied')) {
+                    button.textContent = button.dataset.labelCopied || label;
+                }
+            });
             button.addEventListener('click', function () {
                 copyText(target.value, target).then(function () {
                     var copied = button.dataset.labelCopied || label;
@@ -66,7 +108,11 @@
                     announce(copied);
                     window.clearTimeout(timer);
                     timer = window.setTimeout(function () {
-                        button.textContent = label;
+                        if (labelNode) {
+                            button.replaceChildren(labelNode);
+                        } else {
+                            button.textContent = label;
+                        }
                         button.classList.remove('is-copied');
                     }, 2000);
                 }).catch(function () {
@@ -94,16 +140,24 @@
                 return;
             }
             var hiddenLabel = button.querySelector('.visually-hidden');
-            button.addEventListener('click', function () {
-                var visible = input.type === 'password';
-                input.type = visible ? 'text' : 'password';
-                button.setAttribute('aria-pressed', visible ? 'true' : 'false');
+            function updateLabel() {
+                var visible = input.type === 'text';
                 var label = visible ? button.dataset.labelHide : button.dataset.labelShow;
                 button.title = label;
                 if (hiddenLabel) {
                     hiddenLabel.textContent = label;
+                    hiddenLabel.dataset.i18n = JSON.stringify([
+                        visible ? 'action.hide_password' : 'action.show_password', {}
+                    ]);
                 }
+            }
+            button.addEventListener('click', function () {
+                var visible = input.type === 'password';
+                input.type = visible ? 'text' : 'password';
+                button.setAttribute('aria-pressed', visible ? 'true' : 'false');
+                updateLabel();
             });
+            document.addEventListener('languagechange', updateLabel);
         });
     }
 
@@ -168,7 +222,7 @@
             shortUrlDisabled.hidden = allowed;
         }
 
-        function setError(field, name, message) {
+        function setError(field, name, message, messageKey) {
             var error = form.querySelector('[data-error-for="' + name + '"]');
             if (message) {
                 field.setAttribute('aria-invalid', 'true');
@@ -178,6 +232,11 @@
             }
             if (error) {
                 error.textContent = message || '';
+                if (messageKey) {
+                    error.dataset.i18n = JSON.stringify([messageKey, {max: maxLength}]);
+                } else {
+                    delete error.dataset.i18n;
+                }
                 error.hidden = !message;
             }
         }
@@ -190,19 +249,20 @@
             } else if (length(secret.value) > maxLength) {
                 secretError = form.dataset.msgSecretTooLong;
             }
-            setError(secret, 'secret', secretError);
+            setError(secret, 'secret', secretError, secretError
+                ? (secret.value.trim() === '' ? 'error.secret_required' : 'error.secret_too_long') : null);
             if (secretError) {
                 errors.push(secret);
             }
 
             var passwordError = Array.from(password.value).length > 1024 ? form.dataset.msgPasswordTooLong : '';
-            setError(password, 'password', passwordError);
+            setError(password, 'password', passwordError, passwordError ? 'error.password_too_long' : null);
             if (passwordError) {
                 errors.push(password);
             }
 
             var shortUrlError = shortUrl.checked && !shortUrlAllowed() ? form.dataset.msgShortUrlForbidden : '';
-            setError(shortUrl, 'short_url', shortUrlError);
+            setError(shortUrl, 'short_url', shortUrlError, shortUrlError ? 'error.short_url_forbidden' : null);
             if (shortUrlError) {
                 errors.push(shortUrl);
             }
@@ -265,23 +325,157 @@
     }
 
     /**
-     * Sélecteur de langue : recharge la page dans la langue choisie, en conservant
-     * le jeton du lien (fragment #) sur les pages d'ouverture et de destruction
+     * Traduit l'interface en place : aucun rechargement ni renvoi de secret.
      */
     function initLanguageSwitch() {
         document.querySelectorAll('[data-lang-switch]').forEach(function (form) {
             var select = form.querySelector('select');
-            select.addEventListener('change', function () {
-                var token = document.querySelector('[data-fragment-token]');
-                var url = form.action + '?lang=' + encodeURIComponent(select.value);
-                if (token && token.value !== '') {
-                    url += '#' + token.value;
+            form.hidden = false;
+            form.addEventListener('submit', function (event) {
+                event.preventDefault();
+            });
+            select.addEventListener('change', async function () {
+                var previousLocale = document.documentElement.lang;
+                var locale = select.value;
+                select.disabled = true;
+                try {
+                    var response = await fetch('/translations?lang=' + encodeURIComponent(locale), {
+                        credentials: 'same-origin',
+                        cache: 'no-store'
+                    });
+                    if (!response.ok) {
+                        throw new Error('Translation request failed');
+                    }
+                    var messages = await response.json();
+                    applyTranslations(messages, locale);
+                    var url = new URL(window.location.href);
+                    if (url.searchParams.has('lang')) {
+                        url.searchParams.set('lang', locale);
+                        window.history.replaceState(window.history.state, '', url);
+                    }
+                } catch (error) {
+                    select.value = previousLocale;
+                    announce(document.querySelector('label[for="lang-select"]').textContent);
+                } finally {
+                    select.disabled = false;
                 }
-                window.location.assign(url);
             });
         });
     }
 
+    function initThemeSwitch() {
+        var control = document.querySelector('[data-theme-switch]');
+        if (!control) {
+            return;
+        }
+        var trigger = control.querySelector('.theme-trigger');
+        var options = control.querySelector('.theme-options');
+        var choices = control.querySelectorAll('[data-theme-value]');
+        var icons = trigger.querySelectorAll('[data-theme-icon]');
+        var theme = document.documentElement.dataset.theme || 'auto';
+
+        function updateSelection() {
+            choices.forEach(function (choice) {
+                var selected = choice.dataset.themeValue === theme;
+                choice.setAttribute('aria-pressed', String(selected));
+                if (selected) {
+                    trigger.title = choice.textContent.trim();
+                }
+            });
+            icons.forEach(function (icon) {
+                icon.toggleAttribute('hidden', icon.dataset.themeIcon !== theme);
+            });
+        }
+
+        function positionOptions() {
+            if (options.hidden) {
+                return;
+            }
+            options.style.transform = '';
+            var bounds = options.getBoundingClientRect();
+            var viewportWidth = document.documentElement.clientWidth;
+            var offset = Math.max(8 - bounds.left,
+                Math.min(0, viewportWidth - 8 - bounds.right));
+            options.style.transform = 'translateX(' + offset + 'px)';
+        }
+
+        window.addEventListener('resize', positionOptions);
+
+        function closeOptions(restoreFocus) {
+            options.hidden = true;
+            trigger.setAttribute('aria-expanded', 'false');
+            if (restoreFocus) {
+                trigger.focus();
+            }
+        }
+
+        trigger.addEventListener('click', function () {
+            var opening = options.hidden;
+            options.hidden = !opening;
+            trigger.setAttribute('aria-expanded', String(opening));
+            if (opening) {
+                positionOptions();
+                options.querySelector('[aria-pressed="true"]').focus();
+            }
+        });
+        control.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') {
+                closeOptions(true);
+            }
+        });
+        document.addEventListener('click', function (event) {
+            if (!control.contains(event.target)) {
+                closeOptions(false);
+            }
+        });
+        control.addEventListener('focusout', function (event) {
+            if (!control.contains(event.relatedTarget)) {
+                closeOptions(false);
+            }
+        });
+        choices.forEach(function (choice, index) {
+            choice.addEventListener('keydown', function (event) {
+                var next = index;
+                if (event.key === 'ArrowDown') {
+                    next = (index + 1) % choices.length;
+                } else if (event.key === 'ArrowUp') {
+                    next = (index + choices.length - 1) % choices.length;
+                } else if (event.key === 'Home') {
+                    next = 0;
+                } else if (event.key === 'End') {
+                    next = choices.length - 1;
+                } else {
+                    return;
+                }
+                event.preventDefault();
+                choices[next].focus();
+            });
+            choice.addEventListener('click', function () {
+                theme = choice.dataset.themeValue;
+                if (theme === 'auto') {
+                    delete document.documentElement.dataset.theme;
+                } else {
+                    document.documentElement.dataset.theme = theme;
+                }
+                updateSelection();
+                try {
+                    if (theme === 'auto') {
+                        window.localStorage.removeItem('secret-share-theme');
+                    } else {
+                        window.localStorage.setItem('secret-share-theme', theme);
+                    }
+                } catch (error) {
+                    // Le choix reste actif même si le stockage est bloqué.
+                }
+                closeOptions(true);
+            });
+        });
+        updateSelection();
+        document.addEventListener('languagechange', updateSelection);
+        control.hidden = false;
+    }
+
+    initThemeSwitch();
     initLanguageSwitch();
     initCopyButtons();
     initPasswordToggles();

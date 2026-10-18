@@ -19,6 +19,10 @@ return [
     'app.source_code' => 'Código-fonte',
     'app.skip_to_content' => 'Ir para o conteúdo',
     'app.language' => 'Idioma',
+    'app.theme' => 'Tema',
+    'app.theme_auto' => 'Automático',
+    'app.theme_light' => 'Claro',
+    'app.theme_dark' => 'Escuro',
 
     'common.yes' => 'Sim',
     'common.no' => 'Não',

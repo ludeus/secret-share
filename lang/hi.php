@@ -19,6 +19,10 @@ return [
     'app.source_code' => 'सोर्स कोड',
     'app.skip_to_content' => 'सामग्री पर जाएँ',
     'app.language' => 'भाषा',
+    'app.theme' => 'थीम',
+    'app.theme_auto' => 'स्वचालित',
+    'app.theme_light' => 'हल्की',
+    'app.theme_dark' => 'गहरी',
 
     'common.yes' => 'हाँ',
     'common.no' => 'नहीं',

@@ -70,6 +70,27 @@ final readonly class View
         return $this->e($this->translator->t($key, $params));
     }
 
+    /**
+     * Métadonnées de traduction destinées au navigateur, échappées pour un attribut HTML.
+     *
+     * @param array<string, string|int> $params
+     */
+    public function message(string $key, array $params = []): string
+    {
+        return $this->e(json_encode([$key, (object)$params], JSON_THROW_ON_ERROR));
+    }
+
+    /**
+     * Texte traduisible sans remplacer son élément parent ni ses voisins.
+     *
+     * @param array<string, string|int> $params
+     */
+    public function text(string $key, array $params = []): string
+    {
+        return '<span data-i18n="' . $this->message($key, $params) . '">'
+            . $this->t($key, $params) . '</span>';
+    }
+
     public function locale(): string
     {
         return $this->translator->locale;

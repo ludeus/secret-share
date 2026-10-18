@@ -19,6 +19,10 @@ return [
     'app.source_code' => '源代码',
     'app.skip_to_content' => '跳到正文',
     'app.language' => '语言',
+    'app.theme' => '主题',
+    'app.theme_auto' => '自动',
+    'app.theme_light' => '浅色',
+    'app.theme_dark' => '深色',
 
     'common.yes' => '是',
     'common.no' => '否',

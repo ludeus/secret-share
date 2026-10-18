@@ -1,0 +1,11 @@
+# Surcharge locale chargée automatiquement par docker compose.
+# Le code est monté en lecture seule ; les données restent dans le volume data.
+services:
+  app:
+    volumes:
+      - ./public:/app/public:ro
+      - ./templates:/app/templates:ro
+      - ./src:/app/src:ro
+      - ./lang:/app/lang:ro
+      - ./bin:/app/bin:ro
+      - ./docker/php/development.ini:/usr/local/etc/php/conf.d/zzz-development.ini:ro

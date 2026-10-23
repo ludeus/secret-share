@@ -4,6 +4,17 @@ Toutes les évolutions notables sont consignées ici.
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le projet
 respecte le [versionnage sémantique](https://semver.org/lang/fr/).
 
+## [1.5.1] - 2026-10-23
+
+### Maintenance
+
+- npm : puppeteer-core ^25.14.0 => ^25.16.0
+- images de base figées sur leur dernière version : php:8.5-apache@sha256:5fec3fb1f032…, composer:2@sha256:b6dcd72ca98f…
+- composer : Upgrading sebastian/git-state (1.0.0 => 1.1.0)
+- composer : Upgrading sebastian/git-state (1.0.0 => 1.1.0): Extracting archive
+- dépendances des tests e2e mises à jour
+- paquets système mis à jour : ca-certificates tzdata
+
 ## [1.5.0] - 2026-10-18
 
 ### Ajouts

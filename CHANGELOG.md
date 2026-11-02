@@ -4,6 +4,25 @@ Toutes les évolutions notables sont consignées ici.
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le projet
 respecte le [versionnage sémantique](https://semver.org/lang/fr/).
 
+## [1.5.2] - 2026-11-02
+
+### Maintenance
+
+- Node.js de la CI : 24 => 26
+- images de base figées sur leur dernière version : php:8.5-apache@sha256:4cc63b3d4e05…, composer:2@sha256:4ed71c38c6d7…
+- composer : Removing theseer/tokenizer (2.0.1)
+- composer : Upgrading phpstan/phpstan (2.3.1 => 2.3.4)
+- composer : Upgrading phpunit/php-code-coverage (14.4.1 => 14.5.0)
+- composer : Upgrading phpunit/phpunit (13.4.3 => 13.4.6)
+- composer : Upgrading rector/rector (2.7.0 => 2.8.3)
+- composer : Removing theseer/tokenizer (2.0.1)
+- composer : Upgrading phpunit/php-code-coverage (14.4.1 => 14.5.0): Extracting archive
+- composer : Upgrading phpunit/phpunit (13.4.3 => 13.4.6): Extracting archive
+- composer : Upgrading phpstan/phpstan (2.3.1 => 2.3.4): Extracting archive
+- composer : Upgrading rector/rector (2.7.0 => 2.8.3): Extracting archive
+- dépendances des tests e2e mises à jour
+- paquets système mis à jour : libbrotli1 tzdata
+
 ## [1.5.1] - 2026-10-23
 
 ### Maintenance

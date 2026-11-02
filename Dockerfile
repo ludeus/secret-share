@@ -7,12 +7,12 @@
 
 ARG PHP_VERSION=8.5
 # empreinte de php:${PHP_VERSION}-apache, mise à jour par maintenance/upgrade.py
-ARG PHP_IMAGE_DIGEST=sha256:5fec3fb1f0322c20a01c8af35a09a96f3a83aa369650b0fed161e91cb84056ed
+ARG PHP_IMAGE_DIGEST=sha256:4cc63b3d4e05c40da73e7af5d39364ca2678ac07208919497bda3bbab975be95
 
 # ---------------------------------------------------------------------------
 # Dépendances Composer (sans les outils de développement)
 # ---------------------------------------------------------------------------
-FROM composer:2@sha256:b6dcd72ca98fa19d0e5b8476de179859704891fad06dd9e0b96833d4c430a5fc AS vendor
+FROM composer:2@sha256:4ed71c38c6d788eb4e4e3747b5332f5b40d5b5a6fcadd5062a1a70986a118e0a AS vendor
 WORKDIR /app
 COPY composer.json composer.lock ./
 RUN composer install --no-dev --no-interaction --no-progress --prefer-dist --no-autoloader --no-scripts
@@ -20,7 +20,7 @@ COPY src/ src/
 RUN composer dump-autoload --no-dev --classmap-authoritative
 
 # dépendances de développement, pour la cible « test »
-FROM composer:2@sha256:b6dcd72ca98fa19d0e5b8476de179859704891fad06dd9e0b96833d4c430a5fc AS vendor-dev
+FROM composer:2@sha256:4ed71c38c6d788eb4e4e3747b5332f5b40d5b5a6fcadd5062a1a70986a118e0a AS vendor-dev
 WORKDIR /app
 COPY composer.json composer.lock ./
 RUN composer install --no-interaction --no-progress --prefer-dist --no-scripts
@@ -69,7 +69,7 @@ CMD ["apache2-foreground"]
 # Test : dépendances de développement, pour lancer « composer check » en CI
 # ---------------------------------------------------------------------------
 FROM base AS test
-COPY --from=composer:2@sha256:b6dcd72ca98fa19d0e5b8476de179859704891fad06dd9e0b96833d4c430a5fc /usr/bin/composer /usr/bin/composer
+COPY --from=composer:2@sha256:4ed71c38c6d788eb4e4e3747b5332f5b40d5b5a6fcadd5062a1a70986a118e0a /usr/bin/composer /usr/bin/composer
 COPY --chown=www-data:www-data . .
 COPY --chown=www-data:www-data --from=vendor-dev /app/vendor/ vendor/
 RUN chown www-data:www-data /app
